@@ -1,0 +1,89 @@
+buildscript {
+    ext {
+        springBootVersion = '1.5.4.RELEASE'
+    }
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+plugins {
+    id 'com.github.ben-manes.versions' version '0.15.0'
+}
+
+apply plugin: 'java'
+apply plugin: 'groovy'
+apply plugin: 'maven'
+apply plugin: 'org.springframework.boot'
+
+jar {
+    version = '0.0.1-SNAPSHOT'
+    baseName = 'fint-sse-adapter-skeleton'
+}
+
+javadoc {
+    source = sourceSets.main.allJava
+    classpath = configurations.compile
+    options.windowTitle = 'FINT Java SSE Adapter Skeleton'
+    options.memberLevel = JavadocMemberLevel.PRIVATE
+    destinationDir = file('./javadocs/')
+}
+
+import org.apache.tools.ant.filters.ReplaceTokens
+afterEvaluate {
+    configure(processResources) {
+        filesMatching('**/*.yml') {
+            filter(ReplaceTokens, tokens: [version: jar.version])
+        }
+    }
+}
+
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    jcenter()
+    maven {
+        url 'http://dl.bintray.com/fint/maven'
+    }
+}
+
+dependencies {
+    compile('org.projectlombok:lombok')
+    compile('com.github.springfox.loader:springfox-loader:1.2.0')
+    compile('org.glassfish.jersey.core:jersey-common:2.26')
+    compile('org.glassfish.jersey.core:jersey-client:2.26')
+
+    compile('no.fint:fint-sse:1.1.3')
+    compile('no.fint:fint-event-model:2.0.0')
+    compile('no.fint:fint-relation-model:1.0.7')
+
+    compile('no.fint:fint-meta-modell-java:0.0.1')
+
+    compile('org.springframework.boot:spring-boot-devtools')
+    compile('org.springframework.boot:spring-boot-starter-web')
+
+    testCompile('cglib:cglib-nodep:3.2.5')
+    testCompile('org.spockframework:spock-spring:1.1-groovy-2.4')
+    testCompile('org.spockframework:spock-core:1.1-groovy-2.4')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.0'
+}
+
+bootRun {
+    systemProperties System.properties
+}
+
+test {
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
+}
