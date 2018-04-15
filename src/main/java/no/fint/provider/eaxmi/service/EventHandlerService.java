@@ -5,19 +5,14 @@ import no.fint.event.model.Event;
 import no.fint.event.model.Status;
 import no.fint.event.model.health.Health;
 import no.fint.event.model.health.HealthStatus;
-import no.fint.model.felles.kompleksedatatyper.Identifikator;
 import no.fint.model.metamodell.MetamodellActions;
-import no.fint.model.metamodell.Pakke;
 import no.fint.model.relation.FintResource;
 import no.fint.provider.adapter.event.EventResponseService;
 import no.fint.provider.adapter.event.EventStatusService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import javax.annotation.PostConstruct;
-import java.util.List;
 
 
 @Slf4j
@@ -29,6 +24,9 @@ public class EventHandlerService {
 
     @Autowired
     private EventStatusService eventStatusService;
+
+    @Autowired
+    private FintObjectService fintObjectService;
 
     @Autowired
     private XmiParserService xmiParserService;
@@ -44,9 +42,11 @@ public class EventHandlerService {
 
                 switch (action) {
                     case GET_ALL_PAKKE:
+                        responseEvent.setData(fintObjectService.getPackages());
                         break;
 
                     case GET_ALL_KLASSE:
+                        responseEvent.setData(fintObjectService.getClasses());
                         break;
 
                 }
@@ -84,10 +84,8 @@ public class EventHandlerService {
     @PostConstruct
     void init() {
 
-        xmiParserService.getXmiDocument();
-        List<Pakke> pakkeList = xmiParserService.getPackages();
-        System.out.println();
 
+        xmiParserService.getXmiDocument();
 
     }
 

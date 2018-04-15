@@ -63,7 +63,10 @@ dependencies {
     compile('no.fint:fint-event-model:2.0.0')
     compile('no.fint:fint-relation-model:1.0.7')
 
-    compile('no.fint:fint-meta-modell-java:0.0.1')
+    compile('no.fint:fint-metamodell-model-java:0.2.0')
+
+    compile group: 'net.sf.saxon', name: 'Saxon-HE', version: '9.8.0-10'
+
 
     compile('org.springframework.boot:spring-boot-devtools')
     compile('org.springframework.boot:spring-boot-starter-web')
