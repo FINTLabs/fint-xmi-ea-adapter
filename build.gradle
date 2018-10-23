@@ -20,14 +20,10 @@ apply plugin: 'groovy'
 apply plugin: 'maven'
 apply plugin: 'org.springframework.boot'
 
-jar {
-    version = '0.0.1-SNAPSHOT'
-    baseName = 'fint-sse-adapter-skeleton'
-}
 
 javadoc {
     source = sourceSets.main.allJava
-    classpath = configurations.compile
+    classpath = configurations.runtime
     options.windowTitle = 'FINT Java SSE Adapter Skeleton'
     options.memberLevel = JavadocMemberLevel.PRIVATE
     destinationDir = file('./javadocs/')
@@ -37,7 +33,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 afterEvaluate {
     configure(processResources) {
         filesMatching('**/*.yml') {
-            filter(ReplaceTokens, tokens: [version: jar.version])
+            filter(ReplaceTokens, tokens: [version: version])
         }
     }
 }
@@ -63,7 +59,7 @@ dependencies {
     compile('no.fint:fint-event-model:2.0.0')
     compile('no.fint:fint-relation-model:1.0.7')
 
-    compile('no.fint:fint-metamodell-model-java:0.2.0')
+    compile("no.fint:fint-metamodell-model-java:${apiVersion}")
 
     compile group: 'net.sf.saxon', name: 'Saxon-HE', version: '9.8.0-10'
 
@@ -71,17 +67,44 @@ dependencies {
     compile('org.springframework.boot:spring-boot-devtools')
     compile('org.springframework.boot:spring-boot-starter-web')
 
-    compile('org.kohsuke:github-api:1.92')
-
     testCompile('cglib:cglib-nodep:3.2.5')
     testCompile('org.spockframework:spock-spring:1.1-groovy-2.4')
     testCompile('org.spockframework:spock-core:1.1-groovy-2.4')
     testCompile('org.springframework.boot:spring-boot-starter-test')
 }
 
+task copyExternalDependencies(type: Copy) {
+    from configurations.runtime
+    into "$buildDir/deps/external"
+    exclude '**/fint-*.jar'
+}
+
+task copyFintDependencies(type: Copy) {
+    from configurations.runtime
+    into "$buildDir/deps/fint"
+    include '**/fint-*.jar'
+}
+
+build.dependsOn(copyExternalDependencies)
+build.dependsOn(copyFintDependencies)
+
+jar {
+    manifest {
+        attributes(
+                "Manifest-Version": "1.0",
+                "Main-Class": "no.fint.Application",
+                "Specification-Version": "${apiVersion}",
+                "Implementation-Version": "${version}",
+                "Class-Path": configurations.runtime.collect { it.getName() }.join(' ')
+        )
+    }
+}
+
 task wrapper(type: Wrapper) {
     gradleVersion = '4.0'
 }
+
+bootRepackage.enabled = false
 
 bootRun {
     systemProperties System.properties
