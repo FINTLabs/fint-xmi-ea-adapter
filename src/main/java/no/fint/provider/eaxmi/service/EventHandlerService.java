@@ -12,18 +12,20 @@ import no.fint.provider.adapter.event.EventStatusService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.Optional;
 
 
 @Slf4j
 @Service
 public class EventHandlerService {
 
-    @Autowired
-    private EventResponseService eventResponseService;
 
     @Autowired
     private EventStatusService eventStatusService;
+
+    @Autowired
+    private EventResponseService eventResponseService;
 
     @Autowired
     private FintObjectService fintObjectService;
@@ -31,34 +33,39 @@ public class EventHandlerService {
     @Autowired
     private XmiParserService xmiParserService;
 
-
     public void handleEvent(Event event) {
         if (event.isHealthCheck()) {
             postHealthCheckResponse(event);
         } else {
-            if (event != null && eventStatusService.verifyEvent(event).getStatus() == Status.ADAPTER_ACCEPTED) {
-                MetamodellActions action = MetamodellActions.valueOf(event.getAction());
-                Event<FintResource> responseEvent = new Event<>(event);
-
-                switch (action) {
-                    case GET_ALL_PAKKE:
-                        responseEvent.setData(fintObjectService.getPackages());
-                        break;
-
-                    case GET_ALL_KLASSE:
-                        responseEvent.setData(fintObjectService.getClasses());
-                        break;
-
-                }
-
-                responseEvent.setStatus(Status.ADAPTER_RESPONSE);
-                eventResponseService.postResponse(responseEvent);
+            if (eventStatusService.verifyEvent(event).getStatus() == Status.ADAPTER_ACCEPTED) {
+                handleResponse(event);
             }
         }
     }
 
+    private void handleResponse(Event event) {
+        MetamodellActions action = MetamodellActions.valueOf(event.getAction());
+        Event<FintResource> responseEvent = new Event<>(event);
 
-    public void postHealthCheckResponse(Event event) {
+        switch (action) {
+            case GET_ALL_PAKKE:
+                responseEvent.setData(fintObjectService.getPackages());
+                break;
+
+            case GET_ALL_KLASSE:
+                responseEvent.setData(fintObjectService.getClasses());
+                break;
+
+        }
+
+        responseEvent.setStatus(Status.ADAPTER_RESPONSE);
+        log.info("Responding to {}, {}, {} items", responseEvent.getCorrId(), responseEvent.getAction(),
+                Optional.ofNullable(responseEvent.getData()).map(List::size).orElse(-1));
+        eventResponseService.postResponse(responseEvent);
+    }
+
+
+    private void postHealthCheckResponse(Event event) {
         Event<Health> healthCheckEvent = new Event<>(event);
         healthCheckEvent.setStatus(Status.TEMP_UPSTREAM_QUEUE);
 
@@ -80,14 +87,6 @@ public class EventHandlerService {
         return true;
     }
 
-
-    @PostConstruct
-    void init() {
-
-
-        xmiParserService.getXmiDocument();
-
-    }
 
 }
 

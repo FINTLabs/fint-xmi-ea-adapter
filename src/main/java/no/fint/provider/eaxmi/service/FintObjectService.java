@@ -1,5 +1,6 @@
 package no.fint.provider.eaxmi.service;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.fint.model.metamodell.Klasse;
 import no.fint.model.metamodell.Pakke;
@@ -8,11 +9,15 @@ import no.fint.model.metamodell.kompleksedatatyper.Attributt;
 import no.fint.model.relation.FintResource;
 import no.fint.model.relation.Relation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,7 +33,23 @@ public class FintObjectService {
     @Autowired
     XmiParserService xmiParserService;
 
-    public List<FintResource> getPackages() {
+    @Getter
+    private List<FintResource> packages = Collections.emptyList();
+
+    @Getter
+    private List<FintResource> classes = Collections.emptyList();
+
+    @Scheduled(initialDelay = 10000, fixedRate = 900000)
+    public void update() throws IOException, SAXException, ParserConfigurationException {
+        xmiParserService.getXmiDocument();
+        log.info("Updating packages...");
+        packages = Collections.unmodifiableList(updatePackages());
+        log.info("Updating classes...");
+        classes = Collections.unmodifiableList(updateClasses());
+        log.info("Update done.");
+    }
+
+    private List<FintResource> updatePackages() {
 
         NodeList packages = xmiParserService.getPackages();
         List<FintResource> pakkeList = new ArrayList<>();
@@ -77,7 +98,7 @@ public class FintObjectService {
         return pakkeList;
     }
 
-    public List<FintResource> getClasses() {
+    private List<FintResource> updateClasses() {
         log.info("Start getting classes");
         NodeList classes = xmiParserService.getClasses();
         List<FintResource> klasseList = new ArrayList<>();

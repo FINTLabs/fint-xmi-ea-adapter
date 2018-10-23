@@ -1,21 +1,31 @@
 package no.fint.provider.eaxmi.service;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
-import java.io.File;
+import java.io.IOException;
 
 @Service
 @Data
+@Slf4j
 public class XmiParserService {
 
     @Autowired
-    XPathService xpath;
+    private XPathService xpath;
+
+    @Value("${fint.eaxmi.uri:https://raw.githubusercontent.com/FINTprosjektet/fint-informasjonsmodell-metamodell/master/FINT-metamodell.xml}")
+    private String uri;
 
     private Document doc;
     private NodeList packages;
@@ -23,24 +33,26 @@ public class XmiParserService {
     private NodeList associations;
     private NodeList generalizations;
 
-
-    public void getXmiDocument() {
-        //DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        //factory.setNamespaceAware(true);
-        //DocumentBuilder builder;
-        ClassLoader classLoader = getClass().getClassLoader();
-        File file = new File(classLoader.getResource("FINT-informasjonsmodell.xml").getFile());
-        xpath.initializeSAXParser(file);
+    public void getXmiDocument() throws ParserConfigurationException, IOException, SAXException {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+        DocumentBuilder builder;
+        xpath.initializeSAXParser(uri);
 
 
-        //builder = factory.newDocumentBuilder();
-        //doc = builder.parse(file);
+        builder = factory.newDocumentBuilder();
+        doc = builder.parse(uri);
 
         packages = xpath.getNodeList(doc, "//elements/element[@xmi:type=\"uml:Package\"][@name!=\"Model\"]");
         classes = xpath.getNodeList(doc, "//elements/element[@xmi:type=\"uml:Class\"]");
         associations = xpath.getNodeList(doc, "//connectors/connector/properties[@ea_type='Association']/..");
         generalizations = xpath.getNodeList(doc, "//connectors/connector/properties[@ea_type='Generalization']/..");
 
+        log.info("XMI loaded, {} packages, {} classes, {} generalizations, {} associations",
+                packages.getLength(),
+                classes.getLength(),
+                generalizations.getLength(),
+                associations.getLength());
 
     }
 
