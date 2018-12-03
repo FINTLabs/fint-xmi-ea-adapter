@@ -1,6 +1,7 @@
 package no.fint.provider.eaxmi.service;
 
 import lombok.extern.slf4j.Slf4j;
+import net.sf.saxon.tree.tiny.TinyElementImpl;
 import no.fint.model.metamodell.Klasse;
 import no.fint.model.metamodell.Pakke;
 import no.fint.model.metamodell.Relasjon;
@@ -9,8 +10,6 @@ import no.fint.model.relation.FintResource;
 import no.fint.model.relation.Relation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import javax.xml.xpath.XPathExpressionException;
 import java.util.ArrayList;
@@ -30,36 +29,37 @@ public class FintObjectService {
 
     public List<FintResource> getPackages() {
 
-        NodeList packages = xmiParserService.getPackages();
+        List packages = xmiParserService.getPackages();
         List<FintResource> pakkeList = new ArrayList<>();
 
-        try {
+        packages.forEach(node -> {
+            try {
 
-            for (int i = 0; i < packages.getLength(); i++) {
+                TinyElementImpl element = (TinyElementImpl) node;
+                Pakke pakke = getFintPakke(element);
+                String parentId = xmiParserService.getParentPackageFromNode(element);
 
-                Node node = packages.item(i);
-                Pakke pakke = getFintPakke(node);
-
-                String parentId = xmiParserService.getParentPackageFromNode(node);
-
-                NodeList classesInPackageNodes = xmiParserService.getClassesInPackage(xmiParserService.getIdRefFromNode(node));
+                List<TinyElementImpl> classesInPackageNodes = xmiParserService.getClassesInPackage(xmiParserService.getIdRefFromNode(element));
                 List<Relation> relations = new ArrayList<>();
-                for (int j = 0; j < classesInPackageNodes.getLength(); j++) {
+
+                classesInPackageNodes.forEach(pkg -> {
                     relations.add(
                             new Relation.Builder()
                                     .with(Pakke.Relasjonsnavn.KLASSE)
                                     .forType(Klasse.class)
                                     .field("id")
-                                    .value(xmiParserService.getIdRefFromNode(classesInPackageNodes.item(j)))
+                                    .value(xmiParserService.getIdRefFromNode((TinyElementImpl) pkg))
                                     .build()
                     );
-                }
+
+                });
+
                 if (parentId.length() > 0) {
                     relations.add(new Relation.Builder()
                             .with(Pakke.Relasjonsnavn.OVERORDNET)
                             .forType(Pakke.class)
                             .field("id")
-                            .value(xmiParserService.getParentPackageFromNode(node))
+                            .value(xmiParserService.getParentPackageFromNode(element))
                             .build()
                     );
                 }
@@ -69,67 +69,109 @@ public class FintObjectService {
                                 .addRelations(relations)
                 );
 
+            } catch (XPathExpressionException e) {
+                e.printStackTrace();
             }
-        } catch (XPathExpressionException e) {
-            e.printStackTrace();
-        }
+        });
+
 
         return pakkeList;
     }
 
     public List<FintResource> getClasses() {
         log.info("Start getting classes");
-        NodeList classes = xmiParserService.getClasses();
+        List classes = xmiParserService.getClasses();
         List<FintResource> klasseList = new ArrayList<>();
 
-        for (int i = 0; i < classes.getLength(); i++) {
 
-
+        classes.forEach(clazz -> {
             try {
-                Node node = classes.item(i);
-                Klasse klasse = getFintKlasse(node);
+                TinyElementImpl element = (TinyElementImpl) clazz;
+                Klasse klasse = getFintKlasse(element);
                 List<Relation> relationList = new ArrayList<>();
 
-                addInheritenFromRelation(node, relationList);
+                addInheritenFromRelation(element, relationList);
 
 
-                addPackageRelation(node, relationList);
+                addPackageRelation(element, relationList);
 
-                addClassRelations(relationList, klasse.getId().getIdentifikatorverdi());
+
+                addClassRelations(relationList, xmiParserService.getIdRefFromNode(element));
 
                 klasseList.add(FintResource.with(klasse).addRelations(relationList));
             } catch (XPathExpressionException e) {
                 e.printStackTrace();
-                return null;
+                //return null;
             }
 
-        }
+        });
+
         log.info("End getting classes");
 
         return klasseList;
     }
 
-    public void addClassRelations(List<Relation> relationList, String idref) throws XPathExpressionException {
+    public List<FintResource> getRelations() {
 
-        NodeList classRelations = xmiParserService.getClassRelations(idref);
+        log.info("Start getting relations");
+        List<TinyElementImpl> relations = xmiParserService.getAssociations();
+        List<FintResource> relasjonList = new ArrayList<>();
 
-        for (int i = 0; i < classRelations.getLength(); i++) {
-            Node relasjon = classRelations.item(i);
-            relationList.add(new Relation.Builder()
-                    .with(Klasse.Relasjonsnavn.RELASJON)
-                    .forType(Klasse.class)
-                    .field("id")
-                    .value(getRelasjonId(relasjon))
-                    .build()
-            );
-        }
+        relations.forEach(relation -> {
+            //TinyElementImpl element = relation;
+            List<Relation> relationList = new ArrayList<>();
 
 
+            Relasjon fintRelasjon = getFintRelasjon(relation);
+            addRelationClasses(relationList, xmiParserService.getIdRefFromNode(relation));
+            relasjonList.add(FintResource.with(fintRelasjon).addRelations(relationList));
+
+        });
+
+        log.info("End getting relations");
+
+        return relasjonList;
 
 
     }
 
-    private void addPackageRelation(Node node, List<Relation> relationList) {
+    public void addClassRelations(List<Relation> relationList, String idref) {
+
+        List classRelations = xmiParserService.getClassRelations(idref);
+
+        classRelations.forEach(relation -> {
+            relationList.add(new Relation.Builder()
+                    .with(Klasse.Relasjonsnavn.RELASJON)
+                    .forType(Relasjon.class)
+                    .field("id")
+                    .value(getRelasjonId((TinyElementImpl) relation))
+                    .build()
+            );
+
+        });
+
+    }
+
+    public void addRelationClasses(List<Relation> relationList, String idref) {
+
+        relationList.add(new Relation.Builder()
+                .with(Relasjon.Relasjonsnavn.KLASSE)
+                .forType(Klasse.class)
+                .field("id")
+                .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationSource(idref))))
+                .build()
+        );
+
+        relationList.add(new Relation.Builder()
+                .with(Relasjon.Relasjonsnavn.KLASSE)
+                .forType(Klasse.class)
+                .field("id")
+                .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref))))
+                .build()
+        );
+    }
+
+    private void addPackageRelation(TinyElementImpl node, List<Relation> relationList) {
         relationList.add(new Relation.Builder()
                 .with(Klasse.Relasjonsnavn.PAKKE)
                 .forType(Pakke.class)
@@ -139,7 +181,7 @@ public class FintObjectService {
         );
     }
 
-    private void addInheritenFromRelation(Node node, List<Relation> relationList) throws XPathExpressionException {
+    private void addInheritenFromRelation(TinyElementImpl node, List<Relation> relationList) throws XPathExpressionException {
         String arverId = xmiParserService.getInheritFromId(xmiParserService.getIdRefFromNode(node));
         if (arverId.length() > 0) {
             Relation arverRelation = new Relation.Builder().
@@ -152,7 +194,7 @@ public class FintObjectService {
         }
     }
 
-    public Pakke getFintPakke(Node item) throws XPathExpressionException {
+    public Pakke getFintPakke(TinyElementImpl item) throws XPathExpressionException {
 
         Pakke pakke = new Pakke();
         pakke.setId(FintFactory.getIdentifikator(getId(xpath.getStringValue(item, "@xmi:idref"))));
@@ -161,18 +203,17 @@ public class FintObjectService {
         return pakke;
     }
 
-    public Klasse getFintKlasse(Node item) throws XPathExpressionException {
+    public Klasse getFintKlasse(TinyElementImpl item) {
 
 
-        NodeList attributes = xpath.getNodeList(item, "attributes/attribute");
+        List attributes = xpath.getNodeList(item, "attributes/attribute");
 
         List<Attributt> attributtList = new ArrayList<>();
-        for (int i = 0; i < attributes.getLength(); i++) {
 
-            Node attribute = attributes.item(i);
-            attributtList.add(getFintAttributt(attribute));
+        attributes.forEach(attribute -> {
+            attributtList.add(getFintAttributt((TinyElementImpl) attribute));
+        });
 
-        }
 
         Klasse klasse = new Klasse();
 
@@ -186,7 +227,7 @@ public class FintObjectService {
         return klasse;
     }
 
-    public Attributt getFintAttributt(Node attribute) throws XPathExpressionException {
+    public Attributt getFintAttributt(TinyElementImpl attribute) {
 
         Attributt fintAttributt = new Attributt();
 
@@ -204,7 +245,7 @@ public class FintObjectService {
         return fintAttributt;
     }
 
-    public Relasjon getFintRelasjon(Node relation) throws XPathExpressionException {
+    public Relasjon getFintRelasjon(TinyElementImpl relation) {
 
         Relasjon relasjon = new Relasjon();
 
@@ -231,13 +272,13 @@ public class FintObjectService {
         }
 
         Collections.reverse(idElements);
-        String id = String.join(".", idElements).toLowerCase();
+        String id = String.join("_", idElements).toLowerCase();
 
         return id.replace("model", "no");
     }
 
-    public String getRelasjonId(Node relation) throws XPathExpressionException {
-        return String.format("%s.relasjon.%s",
+    public String getRelasjonId(TinyElementImpl relation) {
+        return String.format("%s_relasjon_%s",
                 getId(xpath.getStringValue(relation, "source/@xmi:idref")),
                 xpath.getStringValue(relation, "target/role/@name")
         );

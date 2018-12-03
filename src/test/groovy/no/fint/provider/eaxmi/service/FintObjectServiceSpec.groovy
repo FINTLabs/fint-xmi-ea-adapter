@@ -1,6 +1,5 @@
 package no.fint.provider.eaxmi.service
 
-import no.fint.model.metamodell.Relasjon
 import spock.lang.Specification
 
 class FintObjectServiceSpec extends Specification {
@@ -13,9 +12,9 @@ class FintObjectServiceSpec extends Specification {
     void setup() {
         xpath = new XPathService()
         //xpath.init()
-        //xmiParserService = new XmiParserService(xpath: xpath)
-        //xmiParserService.getXmiDocument()
-        //fintObjectService = new FintObjectService(xmiParserService: xmiParserService, xpath: xpath)
+        xmiParserService = new XmiParserService(xpath: xpath)
+        xmiParserService.getXmiDocument()
+        fintObjectService = new FintObjectService(xmiParserService: xmiParserService, xpath: xpath)
     }
 
     def "Get klasse id"() {
@@ -24,7 +23,7 @@ class FintObjectServiceSpec extends Specification {
         def id = fintObjectService.getId(Constants.CLASS_PERSON_IDREF)
 
         then:
-        id == "no.fint.felles.person"
+        id == "no_fint_felles_person"
     }
 
     def "Get pakke id"() {
@@ -33,7 +32,7 @@ class FintObjectServiceSpec extends Specification {
         def id = fintObjectService.getId(Constants.PACKAGE_FELLES_IDREF)
 
         then:
-        id == "no.fint.felles"
+        id == "no_fint_felles"
     }
 
     def "Get packages"() {
@@ -56,34 +55,44 @@ class FintObjectServiceSpec extends Specification {
         classes.get(0).getRelations().size() > 0
     }
 
+    def "Get relations"() {
+
+        when:
+        def relations = fintObjectService.getRelations()
+
+        then:
+        relations.size() > 0
+    }
+
     def "Transform XMI package to FINT pakke"() {
 
         given:
         def packages = xmiParserService.getPackages()
 
         when:
-        def pakke = fintObjectService.getFintPakke(packages.item(0))
+        def pakke = fintObjectService.getFintPakke(packages.get(0))
 
         then:
         pakke.getNavn() == "FINT"
-        pakke.getId().identifikatorverdi == "no.fint"
+        pakke.getId().identifikatorverdi == "no_fint"
     }
+
     def "Transform XMI class to FINT klasse"() {
         given:
-        def personItem = xmiParserService.getClassesInPackage(Constants.PACKAGE_FELLES_IDREF).item(0)
+        def personItem = xmiParserService.getClassesInPackage(Constants.PACKAGE_FELLES_IDREF).get(0)
 
         when:
         def personKlasse = fintObjectService.getFintKlasse(personItem)
 
         then:
         personKlasse.getNavn() == "Person"
-        personKlasse.getId().identifikatorverdi == "no.fint.felles.person"
+        personKlasse.getId().identifikatorverdi == "no_fint_felles_person"
         personKlasse.getAttributter().size() > 0
     }
 
     def "Transform XMI attribute to FINT attributt"() {
         given:
-        def personItem = xmiParserService.getClassesInPackage(Constants.PACKAGE_FELLES_IDREF).item(0)
+        def personItem = xmiParserService.getClassesInPackage(Constants.PACKAGE_FELLES_IDREF).get(0)
         def personKlasse = fintObjectService.getFintKlasse(personItem)
 
         when:
@@ -99,7 +108,7 @@ class FintObjectServiceSpec extends Specification {
 
     def "Transform XMI connector to FINT relasjon"() {
         given:
-        def relation = xmiParserService.getAssociations().item(0)
+        def relation = xmiParserService.getAssociations().get(0)
 
         when:
         def relasjon = fintObjectService.getFintRelasjon(relation)
@@ -112,13 +121,13 @@ class FintObjectServiceSpec extends Specification {
 
     def "Get relasjon id"() {
         given:
-        def relation = xmiParserService.getAssociations().item(0)
+        def relation = xmiParserService.getAssociations().get(0)
 
         when:
         def id = fintObjectService.getRelasjonId(relation)
 
         then:
-        id == "no.fint.felles.person.relasjon.statsborgerskap"
+        id == "no_fint_felles_person_relasjon_statsborgerskap"
 
     }
 
@@ -134,18 +143,4 @@ class FintObjectServiceSpec extends Specification {
 
     }
 
-    def "See if saxon rules"() {
-        given:
-        def xpath = new XPathService()
-        ClassLoader classLoader = getClass().getClassLoader()
-        File file = new File(classLoader.getResource("FINT-informasjonsmodell.xml").getFile())
-        xpath.initializeSAXParser(file)
-
-        when:
-        def value = xpath.getStringValue(null, "//element[@xmi:idref='EAPK_10BA7EEB_F77B_4f6d_B1DF_0FEFDFD6D73F']/@name")
-
-        then:
-        value == "Basisklasser"
-
-    }
 }

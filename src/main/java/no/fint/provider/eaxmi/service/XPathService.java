@@ -5,7 +5,6 @@ import net.sf.saxon.trans.XPathException;
 import net.sf.saxon.tree.tiny.TinyElementImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.util.xml.SimpleNamespaceContext;
-import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import javax.xml.transform.sax.SAXSource;
@@ -23,50 +22,10 @@ public class XPathService {
     private XPath xpath;
     private TreeInfo treeInfo;
 
-    /*
 
-    static final XPathFactory XPATH_FACTORY = XPathFactory.newInstance();
-
-    private XPath xpath;
-
-    @PostConstruct
-    public void init() {
-
-        HashMap<String, String> prefMap = new HashMap<String, String>() {{
-            put("uml", "http://schema.omg.org/spec/UML/2.1");
-            put("xmi", "http://schema.omg.org/spec/XMI/2.1");
-        }};
-        SimpleNamespaceContext namespaces = new SimpleNamespaceContext();
-        namespaces.setBindings(prefMap);
-        //XPathFactory xpathFactory = XPathFactory.newInstance();
-        xpath = XPATH_FACTORY.newXPath();
-        //xpath = xpathFactory.newXPath();
-        xpath.setNamespaceContext(namespaces);
-    }
-
-    public String getStringValue(Object document, String expression) throws XPathExpressionException {
-
-        return xpath.compile(expression).evaluate(document, XPathConstants.STRING).toString();
-    }
-
-    public NodeList getNodeList(Object document, String expression) throws XPathExpressionException {
-        return (NodeList) xpath.compile(expression).evaluate(document, XPathConstants.NODESET);
-    }
-
-
-    public String getStringValue(Node document, String expression) {
-        return XPathEvaluator.query(expression, document, XPathConstants.STRING).toString();
-    }
-
-    public NodeList getNodeList(Node document, String expression) {
-        return (NodeList) XPathEvaluator.query(expression, document, XPathConstants.NODESET);
-    }
-
-    */
-
-    public String getStringValue(/*Object document,*/ String expression) {
+    public String getStringValue(Object document, String expression) {
         try {
-            return xpath.compile(expression).evaluate(treeInfo, XPathConstants.STRING).toString();
+            return xpath.compile(expression).evaluate(document, XPathConstants.STRING).toString();
         } catch (XPathExpressionException e) {
             e.printStackTrace();
         }
@@ -75,10 +34,30 @@ public class XPathService {
 
     }
 
-    public NodeList getNodeList(/*Object document,*/ String expression) {
+    public String getStringValue(String expression) {
+        return getStringValue(treeInfo, expression);
+    }
+
+    public List getNodeList(Object document, String expression) {
 
         try {
-            return (NodeList) xpath.compile(expression).evaluate(treeInfo, XPathConstants.NODESET);
+            return (List) xpath.compile(expression).evaluate(document, XPathConstants.NODESET);
+        } catch (XPathExpressionException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+
+    }
+
+    public List getNodeList(String expression) {
+        return getNodeList(treeInfo, expression);
+    }
+
+    public TinyElementImpl getNode(String expression) {
+
+        try {
+            return (TinyElementImpl) xpath.compile(expression).evaluate(treeInfo, XPathConstants.NODE);
         } catch (XPathExpressionException e) {
             e.printStackTrace();
         }
@@ -88,12 +67,8 @@ public class XPathService {
     }
 
     public void initializeSAXParser(File file) {
-        // Set DOM structures to null to release memory
-
         xpath = null;
         try {
-            // The following initialization code is specific to Saxon
-            // Please refer to SaxonHE documentation for details
             XPathFactory xpFactory = new net.sf.saxon.xpath.XPathFactoryImpl();
             xpath = xpFactory.newXPath();
 
@@ -106,7 +81,6 @@ public class XPathService {
 
             xpath.setNamespaceContext(namespaces);
 
-            // Build the source document.
             InputSource inputSrc = new InputSource(file.getAbsolutePath());
             SAXSource saxSrc = new SAXSource(inputSrc);
             net.sf.saxon.Configuration config =

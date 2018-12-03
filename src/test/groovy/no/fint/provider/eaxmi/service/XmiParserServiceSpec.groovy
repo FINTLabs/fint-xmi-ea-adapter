@@ -1,5 +1,6 @@
 package no.fint.provider.eaxmi.service
 
+import net.sf.saxon.tree.tiny.TinyElementImpl
 import spock.lang.Specification
 
 class XmiParserServiceSpec extends Specification {
@@ -9,7 +10,7 @@ class XmiParserServiceSpec extends Specification {
 
     void setup() {
         xpath = new XPathService()
-        xpath.init()
+        //xpath.init()
         xmiParserService = new XmiParserService(xpath: xpath)
         xmiParserService.getXmiDocument()
     }
@@ -20,15 +21,15 @@ class XmiParserServiceSpec extends Specification {
         xmiParserService.getXmiDocument()
 
         then:
-        xmiParserService.getClasses().length > 0
-        xmiParserService.getPackages().length > 0
-        xmiParserService.getAssociations().length > 0
+        xmiParserService.getClasses().size > 0
+        xmiParserService.getPackages().size > 0
+        xmiParserService.getAssociations().size > 0
     }
 
     def "Get idref from node"() {
         given:
         def classesInPackage = xmiParserService.getClassesInPackage(Constants.PACKAGE_FELLES_IDREF)
-        def classPerson = classesInPackage.item(0)
+        def classPerson = classesInPackage.get(0)
 
         when:
         def personIdref = xmiParserService.getIdRefFromNode(classPerson)
@@ -41,7 +42,7 @@ class XmiParserServiceSpec extends Specification {
     def "Get parent package from node"() {
         given:
         def classesInPackage = xmiParserService.getClassesInPackage(Constants.PACKAGE_FELLES_IDREF)
-        def classPerson = classesInPackage.item(0)
+        def classPerson = classesInPackage.get(0)
 
         when:
         def parentId = xmiParserService.getParentPackageFromNode(classPerson)
@@ -73,7 +74,7 @@ class XmiParserServiceSpec extends Specification {
         def classesInPackage = xmiParserService.getClassesInPackage(Constants.PACKAGE_FELLES_IDREF)
 
         then:
-        classesInPackage.length == 1
+        classesInPackage.size() == 1
     }
 
     def "Get parent package id by idref"() {
@@ -99,9 +100,28 @@ class XmiParserServiceSpec extends Specification {
         def relations = xmiParserService.getClassRelations(Constants.CLASS_PERSON_IDREF)
 
         then:
-        relations.getLength() > 0
+        relations.size() > 0
 
 
+    }
+
+    def "Get relation source node"() {
+
+        when:
+        def source = xmiParserService.getRelationSource(Constants.CONNECTOR_IDREF)
+
+        then:
+        source != null
+
+    }
+
+    def "Get relation target node"() {
+
+        when:
+        def target = xmiParserService.getRelationTarget(Constants.CONNECTOR_IDREF)
+
+        then:
+        target != null
     }
 
 }

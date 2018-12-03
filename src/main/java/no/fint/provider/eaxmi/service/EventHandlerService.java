@@ -49,6 +49,10 @@ public class EventHandlerService {
                         responseEvent.setData(fintObjectService.getClasses());
                         break;
 
+                    case GET_ALL_RELASJON:
+                        responseEvent.setData(fintObjectService.getRelations());
+                        break;
+
                 }
 
                 responseEvent.setStatus(Status.ADAPTER_RESPONSE);
