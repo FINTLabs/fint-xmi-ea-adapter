@@ -22,9 +22,7 @@ public class XmiParserService {
     private List<?> associations;
     private List<?> generalizations;
 
-
     public void getXmiDocument() {
-        ClassLoader classLoader = getClass().getClassLoader();
         xpath.initializeSAXParser(uri);
 
         packages = xpath.getNodeList("//elements/element[@xmi:type=\"uml:Package\"][@name!=\"Model\"]");
@@ -34,12 +32,10 @@ public class XmiParserService {
     }
 
     public String getInheritFromId(String idref) {
-
         return xpath.getStringValue(
                 String.format("//connectors/connector/properties[@ea_type='Generalization']/../source[@xmi:idref='%s']/../target/@xmi:idref", idref)
         );
     }
-
 
     public String getIdRefFromNode(Object node) {
         return xpath.getStringValue(node, "@xmi:idref");
@@ -65,11 +61,9 @@ public class XmiParserService {
         return xpath.getNodeList(String.format("//connector/properties[@ea_type='Association']/../source[@xmi:idref='%s']/..", idref));
     }
 
-
     public Object getRelationSource(String idref) {
         return xpath.getNode(String.format("//connector/properties[@ea_type='Association']/..[@xmi:idref='%s']/source", idref));
     }
-
 
     public Object getRelationTarget(String idref) {
         return xpath.getNode(String.format("//connector/properties[@ea_type='Association']/..[@xmi:idref='%s']/target", idref));
