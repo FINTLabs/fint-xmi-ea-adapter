@@ -9,9 +9,10 @@ class XmiParserServiceSpec extends Specification {
     private XPathService xpath
 
     void setup() {
+        def uri = getClass().getResource('/FINT-informasjonsmodell.xml').toURI()
         xpath = new XPathService()
         //xpath.init()
-        xmiParserService = new XmiParserService(xpath: xpath)
+        xmiParserService = new XmiParserService(xpath: xpath, uri: uri)
         xmiParserService.getXmiDocument()
     }
 
