@@ -1,17 +1,17 @@
 server:
- port: 8091
+  port: 8091
 
 springfox:
- title: 'FINT SSE Adapter Skeleton'
- version: '@version@'
+  title: 'FINT SSE Adapter Skeleton'
+  version: '@version@'
 
 base-url: https://beta.felleskomponent.no/fint/metamodell/provider
 fint:
- adapter:
-  organizations: fint.no
-  sse-endpoint: ${base-url}/sse/%s
-  status-endpoint: ${base-url}/status
-  response-endpoint: ${base-url}/response
+  adapter:
+    organizations: fintlabs.no
+    sse-endpoint: ${base-url}/sse/%s
+    status-endpoint: ${base-url}/status
+    response-endpoint: ${base-url}/response
 
  oauth:
   enabled: false

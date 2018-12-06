@@ -36,21 +36,21 @@ public class EventHandlerService {
         if (event.isHealthCheck()) {
             postHealthCheckResponse(event);
         } else {
-            if (event != null && eventStatusService.verifyEvent(event).getStatus() == Status.ADAPTER_ACCEPTED) {
+            if (eventStatusService.verifyEvent(event).getStatus() == Status.ADAPTER_ACCEPTED) {
                 MetamodellActions action = MetamodellActions.valueOf(event.getAction());
                 Event<FintResource> responseEvent = new Event<>(event);
 
                 switch (action) {
                     case GET_ALL_PAKKE:
-                        responseEvent.setData(fintObjectService.getPackages());
+                        fintObjectService.getPackages().forEach(responseEvent::addData);
                         break;
 
                     case GET_ALL_KLASSE:
-                        responseEvent.setData(fintObjectService.getClasses());
+                        fintObjectService.getClasses().forEach(responseEvent::addData);
                         break;
 
                     case GET_ALL_RELASJON:
-                        responseEvent.setData(fintObjectService.getRelations());
+                        fintObjectService.getRelations().forEach(responseEvent::addData);
                         break;
 
                 }

@@ -41,8 +41,7 @@ class FintObjectServiceSpec extends Specification {
         def packages = fintObjectService.getPackages()
 
         then:
-        packages.size() > 0
-        packages.get(0).getRelations().size() > 0
+        packages.allMatch { it.getRelations().size() > 0 }
     }
 
     def "Get classes"() {
@@ -51,8 +50,7 @@ class FintObjectServiceSpec extends Specification {
         def classes = fintObjectService.getClasses()
 
         then:
-        classes.size() > 0
-        classes.get(0).getRelations().size() > 0
+        classes.allMatch { it.getRelations().size() > 0 }
     }
 
     def "Get relations"() {
@@ -61,7 +59,7 @@ class FintObjectServiceSpec extends Specification {
         def relations = fintObjectService.getRelations()
 
         then:
-        relations.size() > 0
+        relations.count() > 0
     }
 
     def "Transform XMI package to FINT pakke"() {

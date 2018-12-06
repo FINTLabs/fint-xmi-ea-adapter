@@ -2,7 +2,7 @@ package no.fint.provider.eaxmi.service;
 
 import net.sf.saxon.om.TreeInfo;
 import net.sf.saxon.trans.XPathException;
-import net.sf.saxon.tree.tiny.TinyElementImpl;
+import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.util.xml.SimpleNamespaceContext;
 import org.xml.sax.InputSource;
@@ -11,7 +11,6 @@ import javax.xml.transform.sax.SAXSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
@@ -23,7 +22,7 @@ public class XPathService {
     private TreeInfo treeInfo;
 
 
-    public String getStringValue(Object document, String expression) {
+    String getStringValue(Object document, String expression) {
         try {
             return xpath.compile(expression).evaluate(document, XPathConstants.STRING).toString();
         } catch (XPathExpressionException e) {
@@ -34,11 +33,11 @@ public class XPathService {
 
     }
 
-    public String getStringValue(String expression) {
+    String getStringValue(String expression) {
         return getStringValue(treeInfo, expression);
     }
 
-    public List getNodeList(Object document, String expression) {
+    List<?> getNodeList(Object document, String expression) {
 
         try {
             return (List) xpath.compile(expression).evaluate(document, XPathConstants.NODESET);
@@ -50,14 +49,14 @@ public class XPathService {
 
     }
 
-    public List getNodeList(String expression) {
+    List getNodeList(String expression) {
         return getNodeList(treeInfo, expression);
     }
 
-    public TinyElementImpl getNode(String expression) {
+    Object getNode(String expression) {
 
         try {
-            return (TinyElementImpl) xpath.compile(expression).evaluate(treeInfo, XPathConstants.NODE);
+            return xpath.compile(expression).evaluate(treeInfo, XPathConstants.NODE);
         } catch (XPathExpressionException e) {
             e.printStackTrace();
         }
@@ -66,10 +65,10 @@ public class XPathService {
 
     }
 
-    public void initializeSAXParser(File file) {
+    void initializeSAXParser(File file) {
         xpath = null;
         try {
-            XPathFactory xpFactory = new net.sf.saxon.xpath.XPathFactoryImpl();
+            XPathFactoryImpl xpFactory = new net.sf.saxon.xpath.XPathFactoryImpl();
             xpath = xpFactory.newXPath();
 
             HashMap<String, String> prefMap = new HashMap<String, String>() {{
@@ -84,8 +83,7 @@ public class XPathService {
             InputSource inputSrc = new InputSource(file.getAbsolutePath());
             SAXSource saxSrc = new SAXSource(inputSrc);
             net.sf.saxon.Configuration config =
-                    ((net.sf.saxon.xpath.XPathFactoryImpl)
-                            xpFactory).getConfiguration();
+                    xpFactory.getConfiguration();
             treeInfo = config.buildDocumentTree(saxSrc);
 
 

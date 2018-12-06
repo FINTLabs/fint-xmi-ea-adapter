@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        springBootVersion = '1.5.4.RELEASE'
+        springBootVersion = '1.5.17.RELEASE'
     }
     repositories {
         jcenter()
@@ -64,8 +64,9 @@ dependencies {
     compile group: 'net.sf.saxon', name: 'Saxon-HE', version: '9.8.0-10'
 
 
-    compile('org.springframework.boot:spring-boot-devtools')
     compile('org.springframework.boot:spring-boot-starter-web')
+    compile('org.springframework.boot:spring-boot-devtools')
+    compile('org.springframework.boot:spring-boot-actuator')
 
     testCompile('cglib:cglib-nodep:3.2.5')
     testCompile('org.spockframework:spock-spring:1.1-groovy-2.4')
