@@ -2,9 +2,9 @@ package no.fint.provider.eaxmi.service;
 
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.util.List;
 
 @Service
@@ -14,6 +14,9 @@ public class XmiParserService {
     @Autowired
     XPathService xpath;
 
+    @Value("${fint.eaxmi.uri:https://raw.githubusercontent.com/FINTprosjektet/fint-informasjonsmodell/master/FINT-informasjonsmodell.xml}")
+    private String uri;
+
     private List<?> packages;
     private List<?> classes;
     private List<?> associations;
@@ -22,8 +25,7 @@ public class XmiParserService {
 
     public void getXmiDocument() {
         ClassLoader classLoader = getClass().getClassLoader();
-        File file = new File(classLoader.getResource("FINT-informasjonsmodell.xml").getFile());
-        xpath.initializeSAXParser(file);
+        xpath.initializeSAXParser(uri);
 
         packages = xpath.getNodeList("//elements/element[@xmi:type=\"uml:Package\"][@name!=\"Model\"]");
         classes = xpath.getNodeList("//elements/element[@xmi:type=\"uml:Class\"]");

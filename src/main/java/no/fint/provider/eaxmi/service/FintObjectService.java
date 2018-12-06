@@ -8,6 +8,7 @@ import no.fint.model.metamodell.kompleksedatatyper.Attributt;
 import no.fint.model.relation.FintResource;
 import no.fint.model.relation.Relation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -27,53 +28,66 @@ public class FintObjectService {
     @Autowired
     XmiParserService xmiParserService;
 
+    @Scheduled(initialDelay = 900000, fixedRate = 900000)
+    public void update() {
+        log.info("Parsing XMI document...");
+        xmiParserService.getXmiDocument();
+        log.info("Parsing XMI document complete.");
+    }
+
     public Stream<FintResource> getPackages() {
 
-        return xmiParserService.getPackages().stream().map(element -> {
-            Pakke pakke = getFintPakke(element);
-            FintResource<Pakke> resource = FintResource.with(pakke);
+        return xmiParserService
+                .getPackages()
+                .stream()
+                .map(element -> {
+                    Pakke pakke = getFintPakke(element);
+                    FintResource<Pakke> resource = FintResource.with(pakke);
 
-            xmiParserService
-                    .getClassesInPackage(
-                            xmiParserService.getIdRefFromNode(element))
-                    .stream()
-                    .map(pkg -> new Relation.Builder()
-                            .with(Pakke.Relasjonsnavn.KLASSE)
-                            .forType(Klasse.class)
-                            .field("id")
-                            .value(xmiParserService.getIdRefFromNode(pkg))
-                            .build())
-                    .forEach(resource::addRelations);
+                    xmiParserService
+                            .getClassesInPackage(
+                                    xmiParserService.getIdRefFromNode(element))
+                            .stream()
+                            .map(pkg -> new Relation.Builder()
+                                    .with(Pakke.Relasjonsnavn.KLASSE)
+                                    .forType(Klasse.class)
+                                    .field("id")
+                                    .value(xmiParserService.getIdRefFromNode(pkg))
+                                    .build())
+                            .forEach(resource::addRelations);
 
-            String parentId = xmiParserService.getParentPackageFromNode(element);
-            if (parentId.length() > 0) {
-                resource.addRelations(new Relation.Builder()
-                        .with(Pakke.Relasjonsnavn.OVERORDNET)
-                        .forType(Pakke.class)
-                        .field("id")
-                        .value(xmiParserService.getParentPackageFromNode(element))
-                        .build()
-                );
-            }
+                    String parentId = xmiParserService.getParentPackageFromNode(element);
+                    if (parentId.length() > 0) {
+                        resource.addRelations(new Relation.Builder()
+                                .with(Pakke.Relasjonsnavn.OVERORDNET)
+                                .forType(Pakke.class)
+                                .field("id")
+                                .value(xmiParserService.getParentPackageFromNode(element))
+                                .build()
+                        );
+                    }
 
-            return resource;
+                    return resource;
 
-        });
+                });
     }
 
     public Stream<FintResource> getClasses() {
         try {
             log.info("Start getting classes");
-            return xmiParserService.getClasses().stream().map(element -> {
-                Klasse klasse = getFintKlasse(element);
-                List<Relation> relationList = new ArrayList<>();
+            return xmiParserService
+                    .getClasses()
+                    .stream()
+                    .map(element -> {
+                        Klasse klasse = getFintKlasse(element);
+                        List<Relation> relationList = new ArrayList<>();
 
-                addInheritanceFromRelation(element, relationList);
-                addPackageRelation(element, relationList);
-                addClassRelations(relationList, xmiParserService.getIdRefFromNode(element));
+                        addInheritanceFromRelation(element, relationList);
+                        addPackageRelation(element, relationList);
+                        addClassRelations(relationList, xmiParserService.getIdRefFromNode(element));
 
-                return FintResource.with(klasse).addRelations(relationList);
-            });
+                        return FintResource.with(klasse).addRelations(relationList);
+                    });
         } finally {
             log.info("End getting classes");
         }
@@ -84,12 +98,15 @@ public class FintObjectService {
 
         try {
             log.info("Start getting relations");
-            return xmiParserService.getAssociations().stream().map(relation ->
-                    FintResource
-                            .with(getFintRelasjon(relation))
-                            .addRelations(
-                                    addRelationClasses(
-                                            xmiParserService.getIdRefFromNode(relation))));
+            return xmiParserService
+                    .getAssociations()
+                    .stream()
+                    .map(relation ->
+                            FintResource
+                                    .with(getFintRelasjon(relation))
+                                    .addRelations(
+                                            addRelationClasses(
+                                                    xmiParserService.getIdRefFromNode(relation))));
 
         } finally {
             log.info("End getting relations");
@@ -101,13 +118,15 @@ public class FintObjectService {
 
     public void addClassRelations(List<Relation> relationList, String idref) {
 
-        xmiParserService.getClassRelations(idref).forEach(relation -> relationList.add(new Relation.Builder()
-                .with(Klasse.Relasjonsnavn.RELASJON)
-                .forType(Relasjon.class)
-                .field("id")
-                .value(getRelasjonId(relation))
-                .build()
-        ));
+        xmiParserService
+                .getClassRelations(idref)
+                .forEach(relation -> relationList.add(new Relation.Builder()
+                        .with(Klasse.Relasjonsnavn.RELASJON)
+                        .forType(Relasjon.class)
+                        .field("id")
+                        .value(getRelasjonId(relation))
+                        .build()
+                ));
 
     }
 

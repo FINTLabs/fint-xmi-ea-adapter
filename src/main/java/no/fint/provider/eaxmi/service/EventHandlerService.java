@@ -28,10 +28,6 @@ public class EventHandlerService {
     @Autowired
     private FintObjectService fintObjectService;
 
-    @Autowired
-    private XmiParserService xmiParserService;
-
-
     public void handleEvent(Event event) {
         if (event.isHealthCheck()) {
             postHealthCheckResponse(event);
@@ -87,10 +83,7 @@ public class EventHandlerService {
 
     @PostConstruct
     void init() {
-
-
-        xmiParserService.getXmiDocument();
-
+        fintObjectService.update();
     }
 
 }

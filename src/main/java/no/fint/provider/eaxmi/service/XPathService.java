@@ -11,7 +11,6 @@ import javax.xml.transform.sax.SAXSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 
@@ -65,7 +64,7 @@ public class XPathService {
 
     }
 
-    void initializeSAXParser(File file) {
+    void initializeSAXParser(String uri) {
         xpath = null;
         try {
             XPathFactoryImpl xpFactory = new net.sf.saxon.xpath.XPathFactoryImpl();
@@ -80,7 +79,7 @@ public class XPathService {
 
             xpath.setNamespaceContext(namespaces);
 
-            InputSource inputSrc = new InputSource(file.getAbsolutePath());
+            InputSource inputSrc = new InputSource(uri);
             SAXSource saxSrc = new SAXSource(inputSrc);
             net.sf.saxon.Configuration config =
                     xpFactory.getConfiguration();
