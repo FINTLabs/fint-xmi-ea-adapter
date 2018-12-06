@@ -6,7 +6,7 @@ metadata:
     kompose.version: 1.16.0 (HEAD)
   labels:
     io.kompose.service: adapter-xmi-ea
-  name: springer
+  name: adapter-xmi-ea
 spec:
   minReadySeconds: 30
   revisionHistoryLimit: 0
@@ -23,8 +23,8 @@ spec:
     spec:
       restartPolicy: Always
       containers:
-        - name: springer-beta
-          image: fintlabs.azurecr.io/fint-xmi-ea-adapter:build.5
+        - name: adapter-xmi-ea
+          image: fintlabs.azurecr.io/fint-xmi-ea-adapter:PR-2.4
           readinessProbe:
             initialDelaySeconds: 30
             timeoutSeconds: 5
