@@ -73,7 +73,6 @@ class FintObjectServiceSpec extends Specification {
 
         then:
         pakke.getNavn() == "FINT"
-        pakke.getId().identifikatorverdi == "no_fint"
     }
 
     def "Transform XMI class to FINT klasse"() {
@@ -85,7 +84,6 @@ class FintObjectServiceSpec extends Specification {
 
         then:
         personKlasse.getNavn() == "Person"
-        personKlasse.getId().identifikatorverdi == "no_fint_felles_person"
         personKlasse.getAttributter().size() > 0
     }
 
@@ -126,7 +124,7 @@ class FintObjectServiceSpec extends Specification {
         def id = fintObjectService.getRelasjonId(relation)
 
         then:
-        id == "no_fint_felles_person_relasjon_statsborgerskap"
+        id == 'EAID_3918321E_C706_4469_892B_CA90C03B4378_statsborgerskap'
 
     }
 
