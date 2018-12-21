@@ -24,7 +24,7 @@ spec:
       restartPolicy: Always
       containers:
         - name: adapter-xmi-ea
-          image: fintlabs.azurecr.io/fint-xmi-ea-adapter:PR-2.4
+          image: fintlabs.azurecr.io/fint-xmi-ea-adapter:PR-2.5
           readinessProbe:
             initialDelaySeconds: 30
             timeoutSeconds: 5
@@ -33,14 +33,13 @@ spec:
               path: /health
           resources:
             limits:
-              memory: "1Gi"
+              memory: "512Mi"
               cpu: "500m"
-            requests:
-              cpu: "100m"
-              memory: "256Mi"
           env:
             - name: TZ
               value: Europe/Oslo
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:+ExitOnOutOfMemoryError -Xmx256m -verbose:gc"
             - name: fint.adapter.sse-endpoint
               value: https://beta.felleskomponent.no/fint/metamodell/provider/sse/%s
             - name: fint.adapter.status-endpoint
