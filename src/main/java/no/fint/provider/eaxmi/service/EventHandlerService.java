@@ -51,6 +51,7 @@ public class EventHandlerService {
 
                 }
 
+                log.info("Response to {}, {} items", action, responseEvent.getData().size());
                 responseEvent.setStatus(Status.ADAPTER_RESPONSE);
                 eventResponseService.postResponse(responseEvent);
             }

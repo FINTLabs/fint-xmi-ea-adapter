@@ -53,6 +53,10 @@ public class XmiParserService {
         return xpath.getStringValue(String.format("//element[@xmi:idref=\"%s\"]/model/@package", idref));
     }
 
+    public List<?> getChildPackagesByIdRef(String idref) {
+        return xpath.getNodeList(String.format("//elements/element[@xmi:type=\"uml:Package\"][model/@package=\"%s\"]", idref));
+    }
+
     public String getName(String idref) {
         return xpath.getStringValue(String.format("//element[@xmi:idref=\"%s\"]/@name", idref));
     }

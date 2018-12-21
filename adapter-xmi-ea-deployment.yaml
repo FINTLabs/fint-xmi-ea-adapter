@@ -24,7 +24,7 @@ spec:
       restartPolicy: Always
       containers:
         - name: adapter-xmi-ea
-          image: fintlabs.azurecr.io/fint-xmi-ea-adapter:PR-2.5
+          image: fintlabs.azurecr.io/fint-xmi-ea-adapter:PR-2.6
           readinessProbe:
             initialDelaySeconds: 30
             timeoutSeconds: 5

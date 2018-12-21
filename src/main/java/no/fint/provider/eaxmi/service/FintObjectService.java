@@ -66,7 +66,17 @@ public class FintObjectService {
                                 .build()
                         );
                     }
-
+                    xmiParserService
+                            .getChildPackagesByIdRef(xmiParserService.getIdRefFromNode(element))
+                            .stream()
+                            .map(xmiParserService::getIdRefFromNode)
+                            .map(id -> new Relation.Builder()
+                                    .with(Pakke.Relasjonsnavn.UNDERORDNET)
+                                    .forType(Pakke.class)
+                                    .field("id")
+                                    .value(id)
+                                    .build())
+                            .forEach(resource::addRelations);
                     return resource;
 
                 });
@@ -133,17 +143,17 @@ public class FintObjectService {
     private List<Relation> addRelationClasses(String idref) {
         return Arrays.asList(
                 new Relation.Builder()
-                        .with(Relasjon.Relasjonsnavn.KLASSE)
+                        .with(Relasjon.Relasjonsnavn.KILDE)
                         .forType(Klasse.class)
                         .field("id")
-                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationSource(idref))))
+                        .value(xmiParserService.getIdRefFromNode(xmiParserService.getRelationSource(idref)))
                         .build(),
 
                 new Relation.Builder()
-                        .with(Relasjon.Relasjonsnavn.KLASSE)
+                        .with(Relasjon.Relasjonsnavn.MAL)
                         .forType(Klasse.class)
                         .field("id")
-                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref))))
+                        .value(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref)))
                         .build()
         );
     }
@@ -174,7 +184,7 @@ public class FintObjectService {
     public Pakke getFintPakke(Object item) {
 
         Pakke pakke = new Pakke();
-        pakke.setId(FintFactory.getIdentifikator(getId(xpath.getStringValue(item, "@xmi:idref"))));
+        pakke.setId(FintFactory.getIdentifikator(xpath.getStringValue(item, "@xmi:idref")));
         pakke.setNavn(xpath.getStringValue(item, "@name"));
         pakke.setStereotype(xpath.getStringValue(item, "properties/@stereotype"));
         return pakke;
@@ -195,7 +205,7 @@ public class FintObjectService {
         klasse.setAbstrakt(Boolean.valueOf(xpath.getStringValue(item, "properties/@isAbstract")));
         klasse.setAttributter(attributtList);
         klasse.setDokumentasjon(FintFactory.getDokumentasjon(xpath.getStringValue(item, "properties/@documentation")));
-        klasse.setId(FintFactory.getIdentifikator(getId(xpath.getStringValue(item, "@xmi:idref"))));
+        klasse.setId(FintFactory.getIdentifikator(xpath.getStringValue(item, "@xmi:idref")));
         klasse.setNavn(xpath.getStringValue(item, "@name"));
         klasse.setStereotype(xpath.getStringValue(item, "properties/@stereotype"));
 
@@ -232,6 +242,7 @@ public class FintObjectService {
         return relasjon;
     }
 
+    @Deprecated
     private String getId(String idref) {
 
         List<String> idElements = new ArrayList<>();
@@ -252,8 +263,8 @@ public class FintObjectService {
     }
 
     public String getRelasjonId(Object relation) {
-        return String.format("%s_relasjon_%s",
-                getId(xpath.getStringValue(relation, "source/@xmi:idref")),
+        return String.format("%s_%s",
+                xpath.getStringValue(relation, "source/@xmi:idref"),
                 xpath.getStringValue(relation, "target/role/@name")
         );
     }

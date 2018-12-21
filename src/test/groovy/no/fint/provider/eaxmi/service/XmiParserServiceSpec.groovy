@@ -61,6 +61,14 @@ class XmiParserServiceSpec extends Specification {
     }
 
 
+    def "Get child packages from idref"() {
+        when:
+        def children = xmiParserService.getChildPackagesByIdRef(Constants.PACKAGE_FELLES_IDREF)
+        children.each { println(it.getAttributeValue('', 'name') )}
+
+        then:
+        children.any { it.getAttributeValue('', 'name') == 'Basisklasser' }
+    }
 
     def "Get inherit from id"() {
         when:
