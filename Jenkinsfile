@@ -36,9 +36,9 @@ pipeline {
                 script {
                     VERSION = TAG_NAME[1..-1]
                 }
-                sh "docker tag ${GIT_COMMIT} fintlabs.azurecr.io/health-adapter:${VERSION}"
+                sh "docker tag ${GIT_COMMIT} fintlabs.azurecr.io/fint-xmi-ea-adapter:${VERSION}"
                 withDockerRegistry([credentialsId: 'fintlabs.azurecr.io', url: 'https://fintlabs.azurecr.io']) {
-                    sh "docker push fintlabs.azurecr.io/health-adapter:${VERSION}"
+                    sh "docker push fintlabs.azurecr.io/fint-xmi-ea-adapter:${VERSION}"
                 }
             }
         }        
