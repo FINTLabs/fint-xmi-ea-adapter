@@ -29,7 +29,7 @@ public class FintObjectService {
     @Autowired
     XmiParserService xmiParserService;
 
-    @Scheduled(initialDelay = 900000, fixedRate = 900000)
+    @Scheduled(initialDelay = 900000, fixedRateString = "${fint.eaxmi.interval:900000}")
     public void update() {
         log.info("Parsing XMI document...");
         xmiParserService.getXmiDocument();

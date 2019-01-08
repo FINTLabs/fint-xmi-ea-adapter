@@ -1,5 +1,6 @@
 package no.fint.provider.eaxmi.service;
 
+import com.google.common.collect.ImmutableMap;
 import net.sf.saxon.om.TreeInfo;
 import net.sf.saxon.trans.XPathException;
 import net.sf.saxon.xpath.XPathFactoryImpl;
@@ -11,7 +12,6 @@ import javax.xml.transform.sax.SAXSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import java.util.HashMap;
 import java.util.List;
 
 @Service
@@ -25,11 +25,8 @@ public class XPathService {
         try {
             return xpath.compile(expression).evaluate(document, XPathConstants.STRING).toString();
         } catch (XPathExpressionException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-
-        return null;
-
     }
 
     String getStringValue(String expression) {
@@ -41,11 +38,8 @@ public class XPathService {
         try {
             return (List) xpath.compile(expression).evaluate(document, XPathConstants.NODESET);
         } catch (XPathExpressionException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-
-        return null;
-
     }
 
     List getNodeList(String expression) {
@@ -57,11 +51,8 @@ public class XPathService {
         try {
             return xpath.compile(expression).evaluate(treeInfo, XPathConstants.NODE);
         } catch (XPathExpressionException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-
-        return null;
-
     }
 
     void initializeSAXParser(String uri) {
@@ -70,14 +61,12 @@ public class XPathService {
             XPathFactoryImpl xpFactory = new net.sf.saxon.xpath.XPathFactoryImpl();
             xpath = xpFactory.newXPath();
 
-            HashMap<String, String> prefMap = new HashMap<String, String>() {{
-                put("uml", "http://schema.omg.org/spec/UML/2.1");
-                put("xmi", "http://schema.omg.org/spec/XMI/2.1");
-            }};
-            SimpleNamespaceContext namespaces = new SimpleNamespaceContext();
-            namespaces.setBindings(prefMap);
-
-            xpath.setNamespaceContext(namespaces);
+            xpath.setNamespaceContext(new SimpleNamespaceContext() {{
+                setBindings(ImmutableMap.of(
+                        "uml", "http://schema.omg.org/spec/UML/2.1",
+                        "xmi", "http://schema.omg.org/spec/XMI/2.1"
+                ));
+            }});
 
             InputSource inputSrc = new InputSource(uri);
             SAXSource saxSrc = new SAXSource(inputSrc);
@@ -85,10 +74,8 @@ public class XPathService {
                     xpFactory.getConfiguration();
             treeInfo = config.buildDocumentTree(saxSrc);
 
-
         } catch (XPathException e) {
-            System.out.println("Exception in initialize():  " + e.getMessage());
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
