@@ -24,7 +24,7 @@ class FintObjectServiceSpec extends Specification {
         def id = fintObjectService.getId(Constants.CLASS_PERSON_IDREF)
 
         then:
-        id == "no_fint_felles_person"
+        id == "no.fint.felles.person"
     }
 
     def "Get pakke id"() {
@@ -33,7 +33,7 @@ class FintObjectServiceSpec extends Specification {
         def id = fintObjectService.getId(Constants.PACKAGE_FELLES_IDREF)
 
         then:
-        id == "no_fint_felles"
+        id == "no.fint.felles"
     }
 
     def "Get packages"() {
@@ -124,7 +124,7 @@ class FintObjectServiceSpec extends Specification {
         def id = fintObjectService.getRelasjonId(relation)
 
         then:
-        id == 'EAID_3918321E_C706_4469_892B_CA90C03B4378_statsborgerskap'
+        id == 'no.fint.felles.person_statsborgerskap'
 
     }
 
