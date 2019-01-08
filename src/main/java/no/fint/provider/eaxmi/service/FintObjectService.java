@@ -7,6 +7,7 @@ import no.fint.model.metamodell.Relasjon;
 import no.fint.model.metamodell.kompleksedatatyper.Attributt;
 import no.fint.model.relation.FintResource;
 import no.fint.model.relation.Relation;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -48,21 +49,23 @@ public class FintObjectService {
                             .getClassesInPackage(
                                     xmiParserService.getIdRefFromNode(element))
                             .stream()
-                            .map(pkg -> new Relation.Builder()
+                            .map(xmiParserService::getIdRefFromNode)
+                            .map(this::getId)
+                            .map(id -> new Relation.Builder()
                                     .with(Pakke.Relasjonsnavn.KLASSE)
                                     .forType(Klasse.class)
                                     .field("id")
-                                    .value(xmiParserService.getIdRefFromNode(pkg))
+                                    .value(id)
                                     .build())
                             .forEach(resource::addRelations);
 
                     String parentId = xmiParserService.getParentPackageFromNode(element);
-                    if (parentId.length() > 0) {
+                    if (StringUtils.isNotEmpty(parentId)) {
                         resource.addRelations(new Relation.Builder()
                                 .with(Pakke.Relasjonsnavn.OVERORDNET)
                                 .forType(Pakke.class)
                                 .field("id")
-                                .value(xmiParserService.getParentPackageFromNode(element))
+                                .value(getId(parentId))
                                 .build()
                         );
                     }
@@ -70,6 +73,7 @@ public class FintObjectService {
                             .getChildPackagesByIdRef(xmiParserService.getIdRefFromNode(element))
                             .stream()
                             .map(xmiParserService::getIdRefFromNode)
+                            .map(this::getId)
                             .map(id -> new Relation.Builder()
                                     .with(Pakke.Relasjonsnavn.UNDERORDNET)
                                     .forType(Pakke.class)
@@ -146,14 +150,14 @@ public class FintObjectService {
                         .with(Relasjon.Relasjonsnavn.KILDE)
                         .forType(Klasse.class)
                         .field("id")
-                        .value(xmiParserService.getIdRefFromNode(xmiParserService.getRelationSource(idref)))
+                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationSource(idref))))
                         .build(),
 
                 new Relation.Builder()
                         .with(Relasjon.Relasjonsnavn.MAL)
                         .forType(Klasse.class)
                         .field("id")
-                        .value(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref)))
+                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref))))
                         .build()
         );
     }
@@ -163,19 +167,19 @@ public class FintObjectService {
                 .with(Klasse.Relasjonsnavn.PAKKE)
                 .forType(Pakke.class)
                 .field("id")
-                .value(xmiParserService.getParentPackageByIdRef(xmiParserService.getIdRefFromNode(node)))
+                .value(getId(xmiParserService.getParentPackageByIdRef(xmiParserService.getIdRefFromNode(node))))
                 .build()
         );
     }
 
     private void addInheritanceFromRelation(Object node, List<Relation> relationList) {
         String arverId = xmiParserService.getInheritFromId(xmiParserService.getIdRefFromNode(node));
-        if (arverId.length() > 0) {
+        if (StringUtils.isNotEmpty(arverId)) {
             Relation arverRelation = new Relation.Builder().
                     with(Klasse.Relasjonsnavn.ARVER)
                     .forType(Klasse.class)
                     .field("id")
-                    .value(arverId)
+                    .value(getId(arverId))
                     .build();
             relationList.add(arverRelation);
         }
@@ -184,7 +188,7 @@ public class FintObjectService {
     public Pakke getFintPakke(Object item) {
 
         Pakke pakke = new Pakke();
-        pakke.setId(FintFactory.getIdentifikator(xpath.getStringValue(item, "@xmi:idref")));
+        pakke.setId(FintFactory.getIdentifikator(getId(xpath.getStringValue(item, "@xmi:idref"))));
         pakke.setNavn(xpath.getStringValue(item, "@name"));
         pakke.setStereotype(xpath.getStringValue(item, "properties/@stereotype"));
         return pakke;
@@ -205,7 +209,7 @@ public class FintObjectService {
         klasse.setAbstrakt(Boolean.valueOf(xpath.getStringValue(item, "properties/@isAbstract")));
         klasse.setAttributter(attributtList);
         klasse.setDokumentasjon(FintFactory.getDokumentasjon(xpath.getStringValue(item, "properties/@documentation")));
-        klasse.setId(FintFactory.getIdentifikator(xpath.getStringValue(item, "@xmi:idref")));
+        klasse.setId(FintFactory.getIdentifikator(getId(xpath.getStringValue(item, "@xmi:idref"))));
         klasse.setNavn(xpath.getStringValue(item, "@name"));
         klasse.setStereotype(xpath.getStringValue(item, "properties/@stereotype"));
 
@@ -242,9 +246,7 @@ public class FintObjectService {
         return relasjon;
     }
 
-    @Deprecated
     private String getId(String idref) {
-
         List<String> idElements = new ArrayList<>();
 
         idElements.add(xmiParserService.getName(idref));
@@ -257,15 +259,23 @@ public class FintObjectService {
         }
 
         Collections.reverse(idElements);
-        String id = String.join("_", idElements).toLowerCase();
+        String id = String.join(".", idElements).toLowerCase();
 
-        return id.replace("model", "no");
+        return stripNationalCharacters(id)
+                .replace("model", "no")
+                .replace(" ", "");
+    }
+
+    private String stripNationalCharacters(String id) {
+        return StringUtils.stripAccents(id)
+                .replace('æ', 'a')
+                .replace('ø', 'o');
     }
 
     public String getRelasjonId(Object relation) {
         return String.format("%s_%s",
-                xpath.getStringValue(relation, "source/@xmi:idref"),
-                xpath.getStringValue(relation, "target/role/@name")
+                getId(xpath.getStringValue(relation, "source/@xmi:idref")),
+                stripNationalCharacters(xpath.getStringValue(relation, "target/role/@name"))
         );
     }
 

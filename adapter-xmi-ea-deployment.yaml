@@ -34,12 +34,12 @@ spec:
           resources:
             limits:
               memory: "512Mi"
-              cpu: "500m"
+              cpu: "600m"
           env:
             - name: TZ
               value: Europe/Oslo
             - name: JAVA_TOOL_OPTIONS
-              value: "-XX:+ExitOnOutOfMemoryError -Xmx256m -verbose:gc"
+              value: "-XX:+ExitOnOutOfMemoryError -Xmx300m -verbose:gc"
             - name: fint.adapter.sse-endpoint
               value: https://beta.felleskomponent.no/fint/metamodell/provider/sse/%s
             - name: fint.adapter.status-endpoint
