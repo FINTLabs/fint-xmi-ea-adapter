@@ -1,13 +1,13 @@
 security:
- basic:
-  enabled: false
+  basic:
+    enabled: false
 
 fint:
- adapter:
-  organizations: mock.no
-  sse-endpoint: http://localhost:8080/provider/sse/%s
-  status-endpoint: http://localhost:8080/provider/status
-  response-endpoint: http://localhost:8080/provider/response
+  adapter:
+    organizations: mock.no
+    sse-endpoint: http://localhost:8080/provider/sse/%s
+    status-endpoint: http://localhost:8080/provider/status
+    response-endpoint: http://localhost:8080/provider/response
 
- oauth:
-  enabled: false
+  oauth:
+    enabled: false

@@ -28,29 +28,30 @@ public class EventHandlerService {
     @Autowired
     private FintObjectService fintObjectService;
 
-    @Autowired
-    private XmiParserService xmiParserService;
-
-
     public void handleEvent(Event event) {
         if (event.isHealthCheck()) {
             postHealthCheckResponse(event);
         } else {
-            if (event != null && eventStatusService.verifyEvent(event).getStatus() == Status.ADAPTER_ACCEPTED) {
+            if (eventStatusService.verifyEvent(event).getStatus() == Status.ADAPTER_ACCEPTED) {
                 MetamodellActions action = MetamodellActions.valueOf(event.getAction());
                 Event<FintResource> responseEvent = new Event<>(event);
 
                 switch (action) {
                     case GET_ALL_PAKKE:
-                        responseEvent.setData(fintObjectService.getPackages());
+                        fintObjectService.getPackages().forEach(responseEvent::addData);
                         break;
 
                     case GET_ALL_KLASSE:
-                        responseEvent.setData(fintObjectService.getClasses());
+                        fintObjectService.getClasses().forEach(responseEvent::addData);
+                        break;
+
+                    case GET_ALL_RELASJON:
+                        fintObjectService.getRelations().forEach(responseEvent::addData);
                         break;
 
                 }
 
+                log.info("Response to {}, {} items", action, responseEvent.getData().size());
                 responseEvent.setStatus(Status.ADAPTER_RESPONSE);
                 eventResponseService.postResponse(responseEvent);
             }
@@ -83,10 +84,7 @@ public class EventHandlerService {
 
     @PostConstruct
     void init() {
-
-
-        xmiParserService.getXmiDocument();
-
+        fintObjectService.update();
     }
 
 }

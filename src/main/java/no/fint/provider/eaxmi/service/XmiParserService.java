@@ -2,13 +2,10 @@ package no.fint.provider.eaxmi.service;
 
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
-import javax.xml.xpath.XPathExpressionException;
-import java.io.File;
+import java.util.List;
 
 @Service
 @Data
@@ -17,89 +14,63 @@ public class XmiParserService {
     @Autowired
     XPathService xpath;
 
-    private Document doc;
-    private NodeList packages;
-    private NodeList classes;
-    private NodeList associations;
-    private NodeList generalizations;
+    @Value("${fint.eaxmi.uri:https://raw.githubusercontent.com/FINTprosjektet/fint-informasjonsmodell/master/FINT-informasjonsmodell.xml}")
+    private String uri;
 
+    private List<?> packages;
+    private List<?> classes;
+    private List<?> associations;
+    private List<?> generalizations;
 
     public void getXmiDocument() {
-        //DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        //factory.setNamespaceAware(true);
-        //DocumentBuilder builder;
-        ClassLoader classLoader = getClass().getClassLoader();
-        File file = new File(classLoader.getResource("FINT-informasjonsmodell.xml").getFile());
-        xpath.initializeSAXParser(file);
+        xpath.initializeSAXParser(uri);
 
-
-        //builder = factory.newDocumentBuilder();
-        //doc = builder.parse(file);
-
-        packages = xpath.getNodeList(doc, "//elements/element[@xmi:type=\"uml:Package\"][@name!=\"Model\"]");
-        classes = xpath.getNodeList(doc, "//elements/element[@xmi:type=\"uml:Class\"]");
-        associations = xpath.getNodeList(doc, "//connectors/connector/properties[@ea_type='Association']/..");
-        generalizations = xpath.getNodeList(doc, "//connectors/connector/properties[@ea_type='Generalization']/..");
-
-
+        packages = xpath.getNodeList("//elements/element[@xmi:type=\"uml:Package\"][@name!=\"Model\"]");
+        classes = xpath.getNodeList("//elements/element[@xmi:type=\"uml:Class\"]");
+        associations = xpath.getNodeList("//connectors/connector/properties[@ea_type='Association']/..");
+        generalizations = xpath.getNodeList("//connectors/connector/properties[@ea_type='Generalization']/..");
     }
 
-    public String getInheritFromId(String idref) throws XPathExpressionException {
-
-        return xpath.getStringValue(doc,
+    public String getInheritFromId(String idref) {
+        return xpath.getStringValue(
                 String.format("//connectors/connector/properties[@ea_type='Generalization']/../source[@xmi:idref='%s']/../target/@xmi:idref", idref)
         );
     }
 
-
-    public String getIdRefFromNode(Node node) {
-        //try {
+    public String getIdRefFromNode(Object node) {
         return xpath.getStringValue(node, "@xmi:idref");
-        //} catch (XPathExpressionException e) {
-        //    e.printStackTrace();
-        //    return null;
-        //}
     }
 
-    public NodeList getClassesInPackage(String idref) throws XPathExpressionException {
-        return xpath.getNodeList(doc, String.format("//element[@xmi:type=\"uml:Class\"]/model[@package=\"%s\"]/..", idref));
+    public List<?> getClassesInPackage(String idref) {
+        return xpath.getNodeList(String.format("//element[@xmi:type=\"uml:Class\"]/model[@package=\"%s\"]/..", idref));
     }
 
-    public String getParentPackageFromNode(Node node) {
-        //try {
+    public String getParentPackageFromNode(Object node) {
         return xpath.getStringValue(node, "model/@package");
-        //} catch (XPathExpressionException e) {
-        //    return null;
-        //}
     }
 
     public String getParentPackageByIdRef(String idref) {
+        return xpath.getStringValue(String.format("//element[@xmi:idref=\"%s\"]/model/@package", idref));
+    }
 
-        //try {
-        return xpath.getStringValue(doc, String.format("//element[@xmi:idref=\"%s\"]/model/@package", idref));
-        //} catch (XPathExpressionException e) {
-        //    e.printStackTrace();
-        //    return null;
-        //}
-
+    public List<?> getChildPackagesByIdRef(String idref) {
+        return xpath.getNodeList(String.format("//elements/element[@xmi:type=\"uml:Package\"][model/@package=\"%s\"]", idref));
     }
 
     public String getName(String idref) {
-        //try {
-        return xpath.getStringValue(doc, String.format("//element[@xmi:idref=\"%s\"]/@name", idref));
-        //} catch (XPathExpressionException e) {
-        //    e.printStackTrace();
-        //    return null;
-        //}
+        return xpath.getStringValue(String.format("//element[@xmi:idref=\"%s\"]/@name", idref));
     }
 
-    public NodeList getClassRelations(String idref) {
-        //try {
-        return xpath.getNodeList(doc, String.format("//connector/properties[@ea_type='Association']/../source[@xmi:idref='EAID_3918321E_C706_4469_892B_CA90C03B4378']/..", idref));
-        //} catch (XPathExpressionException e) {
-        //    e.printStackTrace();
-        //    return null;
-        //}
+    public List<?> getClassRelations(String idref) {
+        return xpath.getNodeList(String.format("//connector/properties[@ea_type='Association']/../source[@xmi:idref='%s']/..", idref));
+    }
+
+    public Object getRelationSource(String idref) {
+        return xpath.getNode(String.format("//connector/properties[@ea_type='Association']/..[@xmi:idref='%s']/source", idref));
+    }
+
+    public Object getRelationTarget(String idref) {
+        return xpath.getNode(String.format("//connector/properties[@ea_type='Association']/..[@xmi:idref='%s']/target", idref));
     }
 
 }

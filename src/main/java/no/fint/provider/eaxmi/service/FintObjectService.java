@@ -7,16 +7,17 @@ import no.fint.model.metamodell.Relasjon;
 import no.fint.model.metamodell.kompleksedatatyper.Attributt;
 import no.fint.model.relation.FintResource;
 import no.fint.model.relation.Relation;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
-import javax.xml.xpath.XPathExpressionException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -28,131 +29,163 @@ public class FintObjectService {
     @Autowired
     XmiParserService xmiParserService;
 
-    public List<FintResource> getPackages() {
+    @Scheduled(initialDelay = 900000, fixedRate = 900000)
+    public void update() {
+        log.info("Parsing XMI document...");
+        xmiParserService.getXmiDocument();
+        log.info("Parsing XMI document complete.");
+    }
 
-        NodeList packages = xmiParserService.getPackages();
-        List<FintResource> pakkeList = new ArrayList<>();
+    public Stream<FintResource> getPackages() {
 
-        try {
+        return xmiParserService
+                .getPackages()
+                .stream()
+                .map(element -> {
+                    Pakke pakke = getFintPakke(element);
+                    FintResource<Pakke> resource = FintResource.with(pakke);
 
-            for (int i = 0; i < packages.getLength(); i++) {
-
-                Node node = packages.item(i);
-                Pakke pakke = getFintPakke(node);
-
-                String parentId = xmiParserService.getParentPackageFromNode(node);
-
-                NodeList classesInPackageNodes = xmiParserService.getClassesInPackage(xmiParserService.getIdRefFromNode(node));
-                List<Relation> relations = new ArrayList<>();
-                for (int j = 0; j < classesInPackageNodes.getLength(); j++) {
-                    relations.add(
-                            new Relation.Builder()
+                    xmiParserService
+                            .getClassesInPackage(
+                                    xmiParserService.getIdRefFromNode(element))
+                            .stream()
+                            .map(xmiParserService::getIdRefFromNode)
+                            .map(this::getId)
+                            .map(id -> new Relation.Builder()
                                     .with(Pakke.Relasjonsnavn.KLASSE)
                                     .forType(Klasse.class)
                                     .field("id")
-                                    .value(xmiParserService.getIdRefFromNode(classesInPackageNodes.item(j)))
-                                    .build()
-                    );
-                }
-                if (parentId.length() > 0) {
-                    relations.add(new Relation.Builder()
-                            .with(Pakke.Relasjonsnavn.OVERORDNET)
-                            .forType(Pakke.class)
-                            .field("id")
-                            .value(xmiParserService.getParentPackageFromNode(node))
-                            .build()
-                    );
-                }
+                                    .value(id)
+                                    .build())
+                            .forEach(resource::addRelations);
 
-                pakkeList.add(
-                        FintResource.with(pakke)
-                                .addRelations(relations)
-                );
+                    String parentId = xmiParserService.getParentPackageFromNode(element);
+                    if (StringUtils.isNotEmpty(parentId)) {
+                        resource.addRelations(new Relation.Builder()
+                                .with(Pakke.Relasjonsnavn.OVERORDNET)
+                                .forType(Pakke.class)
+                                .field("id")
+                                .value(getId(parentId))
+                                .build()
+                        );
+                    }
+                    xmiParserService
+                            .getChildPackagesByIdRef(xmiParserService.getIdRefFromNode(element))
+                            .stream()
+                            .map(xmiParserService::getIdRefFromNode)
+                            .map(this::getId)
+                            .map(id -> new Relation.Builder()
+                                    .with(Pakke.Relasjonsnavn.UNDERORDNET)
+                                    .forType(Pakke.class)
+                                    .field("id")
+                                    .value(id)
+                                    .build())
+                            .forEach(resource::addRelations);
+                    return resource;
 
-            }
-        } catch (XPathExpressionException e) {
-            e.printStackTrace();
-        }
-
-        return pakkeList;
+                });
     }
 
-    public List<FintResource> getClasses() {
-        log.info("Start getting classes");
-        NodeList classes = xmiParserService.getClasses();
-        List<FintResource> klasseList = new ArrayList<>();
+    public Stream<FintResource> getClasses() {
+        try {
+            log.info("Start getting classes");
+            return xmiParserService
+                    .getClasses()
+                    .stream()
+                    .map(element -> {
+                        Klasse klasse = getFintKlasse(element);
+                        List<Relation> relationList = new ArrayList<>();
 
-        for (int i = 0; i < classes.getLength(); i++) {
+                        addInheritanceFromRelation(element, relationList);
+                        addPackageRelation(element, relationList);
+                        addClassRelations(relationList, xmiParserService.getIdRefFromNode(element));
 
-
-            try {
-                Node node = classes.item(i);
-                Klasse klasse = getFintKlasse(node);
-                List<Relation> relationList = new ArrayList<>();
-
-                addInheritenFromRelation(node, relationList);
-
-
-                addPackageRelation(node, relationList);
-
-                addClassRelations(relationList, klasse.getId().getIdentifikatorverdi());
-
-                klasseList.add(FintResource.with(klasse).addRelations(relationList));
-            } catch (XPathExpressionException e) {
-                e.printStackTrace();
-                return null;
-            }
-
+                        return FintResource.with(klasse).addRelations(relationList);
+                    });
+        } finally {
+            log.info("End getting classes");
         }
-        log.info("End getting classes");
 
-        return klasseList;
     }
 
-    public void addClassRelations(List<Relation> relationList, String idref) throws XPathExpressionException {
+    public Stream<FintResource> getRelations() {
 
-        NodeList classRelations = xmiParserService.getClassRelations(idref);
+        try {
+            log.info("Start getting relations");
+            return xmiParserService
+                    .getAssociations()
+                    .stream()
+                    .map(relation ->
+                            FintResource
+                                    .with(getFintRelasjon(relation))
+                                    .addRelations(
+                                            addRelationClasses(
+                                                    xmiParserService.getIdRefFromNode(relation))));
 
-        for (int i = 0; i < classRelations.getLength(); i++) {
-            Node relasjon = classRelations.item(i);
-            relationList.add(new Relation.Builder()
-                    .with(Klasse.Relasjonsnavn.RELASJON)
-                    .forType(Klasse.class)
-                    .field("id")
-                    .value(getRelasjonId(relasjon))
-                    .build()
-            );
+        } finally {
+            log.info("End getting relations");
+
         }
-
-
 
 
     }
 
-    private void addPackageRelation(Node node, List<Relation> relationList) {
+    public void addClassRelations(List<Relation> relationList, String idref) {
+
+        xmiParserService
+                .getClassRelations(idref)
+                .forEach(relation -> relationList.add(new Relation.Builder()
+                        .with(Klasse.Relasjonsnavn.RELASJON)
+                        .forType(Relasjon.class)
+                        .field("id")
+                        .value(getRelasjonId(relation))
+                        .build()
+                ));
+
+    }
+
+    private List<Relation> addRelationClasses(String idref) {
+        return Arrays.asList(
+                new Relation.Builder()
+                        .with(Relasjon.Relasjonsnavn.KILDE)
+                        .forType(Klasse.class)
+                        .field("id")
+                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationSource(idref))))
+                        .build(),
+
+                new Relation.Builder()
+                        .with(Relasjon.Relasjonsnavn.MAL)
+                        .forType(Klasse.class)
+                        .field("id")
+                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref))))
+                        .build()
+        );
+    }
+
+    private void addPackageRelation(Object node, List<Relation> relationList) {
         relationList.add(new Relation.Builder()
                 .with(Klasse.Relasjonsnavn.PAKKE)
                 .forType(Pakke.class)
                 .field("id")
-                .value(xmiParserService.getParentPackageByIdRef(xmiParserService.getIdRefFromNode(node)))
+                .value(getId(xmiParserService.getParentPackageByIdRef(xmiParserService.getIdRefFromNode(node))))
                 .build()
         );
     }
 
-    private void addInheritenFromRelation(Node node, List<Relation> relationList) throws XPathExpressionException {
+    private void addInheritanceFromRelation(Object node, List<Relation> relationList) {
         String arverId = xmiParserService.getInheritFromId(xmiParserService.getIdRefFromNode(node));
-        if (arverId.length() > 0) {
+        if (StringUtils.isNotEmpty(arverId)) {
             Relation arverRelation = new Relation.Builder().
                     with(Klasse.Relasjonsnavn.ARVER)
                     .forType(Klasse.class)
                     .field("id")
-                    .value(arverId)
+                    .value(getId(arverId))
                     .build();
             relationList.add(arverRelation);
         }
     }
 
-    public Pakke getFintPakke(Node item) throws XPathExpressionException {
+    public Pakke getFintPakke(Object item) {
 
         Pakke pakke = new Pakke();
         pakke.setId(FintFactory.getIdentifikator(getId(xpath.getStringValue(item, "@xmi:idref"))));
@@ -161,18 +194,15 @@ public class FintObjectService {
         return pakke;
     }
 
-    public Klasse getFintKlasse(Node item) throws XPathExpressionException {
+    public Klasse getFintKlasse(Object item) {
 
 
-        NodeList attributes = xpath.getNodeList(item, "attributes/attribute");
+        List<Attributt> attributtList =
+                xpath.getNodeList(item, "attributes/attribute")
+                        .stream()
+                        .map(this::getFintAttributt)
+                        .collect(Collectors.toList());
 
-        List<Attributt> attributtList = new ArrayList<>();
-        for (int i = 0; i < attributes.getLength(); i++) {
-
-            Node attribute = attributes.item(i);
-            attributtList.add(getFintAttributt(attribute));
-
-        }
 
         Klasse klasse = new Klasse();
 
@@ -186,7 +216,7 @@ public class FintObjectService {
         return klasse;
     }
 
-    public Attributt getFintAttributt(Node attribute) throws XPathExpressionException {
+    private Attributt getFintAttributt(Object attribute) {
 
         Attributt fintAttributt = new Attributt();
 
@@ -204,26 +234,24 @@ public class FintObjectService {
         return fintAttributt;
     }
 
-    public Relasjon getFintRelasjon(Node relation) throws XPathExpressionException {
+    public Relasjon getFintRelasjon(Object relation) {
 
         Relasjon relasjon = new Relasjon();
 
         relasjon.setNavn(xpath.getStringValue(relation, "target/role/@name"));
         relasjon.setDokumentasjon(FintFactory.getDokumentasjon(xpath.getStringValue(relation, "target/documentation/@value")));
-        relasjon.setMultiplisitet(Arrays.asList(FintFactory.getMultiplisitetFromString(xpath.getStringValue(relation, "target/type/@multiplicity"))));
+        relasjon.setMultiplisitet(Collections.singletonList(FintFactory.getMultiplisitetFromString(xpath.getStringValue(relation, "target/type/@multiplicity"))));
         relasjon.setId(FintFactory.getIdentifikator(getRelasjonId(relation)));
 
         return relasjon;
     }
 
     private String getId(String idref) {
-
         List<String> idElements = new ArrayList<>();
-        String parentPackageId;
 
         idElements.add(xmiParserService.getName(idref));
 
-        parentPackageId = xmiParserService.getParentPackageByIdRef(idref);
+        String parentPackageId = xmiParserService.getParentPackageByIdRef(idref);
         idElements.add(xmiParserService.getName(parentPackageId));
         while (!xmiParserService.getParentPackageByIdRef(parentPackageId).isEmpty()) {
             parentPackageId = xmiParserService.getParentPackageByIdRef(parentPackageId);
@@ -233,13 +261,21 @@ public class FintObjectService {
         Collections.reverse(idElements);
         String id = String.join(".", idElements).toLowerCase();
 
-        return id.replace("model", "no");
+        return stripNationalCharacters(id)
+                .replace("model", "no")
+                .replace(" ", "");
     }
 
-    public String getRelasjonId(Node relation) throws XPathExpressionException {
-        return String.format("%s.relasjon.%s",
+    private String stripNationalCharacters(String id) {
+        return StringUtils.stripAccents(id)
+                .replace('æ', 'a')
+                .replace('ø', 'o');
+    }
+
+    public String getRelasjonId(Object relation) {
+        return String.format("%s_%s",
                 getId(xpath.getStringValue(relation, "source/@xmi:idref")),
-                xpath.getStringValue(relation, "target/role/@name")
+                stripNationalCharacters(xpath.getStringValue(relation, "target/role/@name"))
         );
     }
 

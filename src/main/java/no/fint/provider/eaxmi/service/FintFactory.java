@@ -32,8 +32,14 @@ public enum FintFactory {
     public static Multiplisitet getMultiplisitetFromString(String multiplicityString) {
         Multiplisitet multiplisitet = new Multiplisitet();
         String[] multiplicity = multiplicityString.split("\\.\\.");
-        multiplisitet.setNedre(multiplicity[0]);
-        multiplisitet.setOvre(multiplicity[1]);
+        if (multiplicity.length == 2) {
+            multiplisitet.setNedre(multiplicity[0]);
+            multiplisitet.setOvre(multiplicity[1]);
+        }
+        if (multiplicity.length == 1) {
+            multiplisitet.setNedre(multiplicity[0]);
+            multiplisitet.setOvre(multiplicity[0]);
+        }
         return multiplisitet;
     }
 }
