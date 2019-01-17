@@ -20,5 +20,7 @@ public class FintAdapterProps {
     @Value("${fint.adapter.status-endpoint}")
     private String statusEndpoint;
 
+    @Value("${fint.adapter.sse-expiration:30000}")
+    private int expiration;
 
 }

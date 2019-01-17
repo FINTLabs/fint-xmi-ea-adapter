@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -32,9 +33,14 @@ public class EventResponseService {
      * @param event Event to post back
      */
     public void postResponse(Event event) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.put(HeaderConstants.ORG_ID, Lists.newArrayList(event.getOrgId()));
-        ResponseEntity<Void> response = restTemplate.exchange(props.getResponseEndpoint(), HttpMethod.POST, new HttpEntity<>(event, headers), Void.class);
-        log.info("Provider POST response: {}", response.getStatusCode());
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.put(HeaderConstants.ORG_ID, Lists.newArrayList(event.getOrgId()));
+            log.info("Posting response for {} ...", event.getAction());
+            ResponseEntity<Void> response = restTemplate.exchange(props.getResponseEndpoint(), HttpMethod.POST, new HttpEntity<>(event, headers), Void.class);
+            log.info("Provider POST response: {}", response.getStatusCode());
+        } catch (RestClientException e) {
+            log.error("Unable to POST response for {}: {}", event, e.getMessage());
+        }
     }
 }
