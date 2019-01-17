@@ -1,6 +1,6 @@
 package no.fint.provider.eaxmi.service
 
-import net.sf.saxon.tree.tiny.TinyElementImpl
+
 import spock.lang.Specification
 
 class XmiParserServiceSpec extends Specification {
@@ -106,11 +106,18 @@ class XmiParserServiceSpec extends Specification {
     def "Get relations for a class"() {
 
         when:
-        def relations = xmiParserService.getClassRelations(Constants.CLASS_PERSON_IDREF)
+        def relations = xmiParserService.getClassForwardRelations(Constants.CLASS_PERSON_IDREF)
+        relations.each { println('-> ' + xmiParserService.getIdRefFromNode(it)) }
 
         then:
         relations.size() > 0
 
+        when:
+        relations = xmiParserService.getClassReverseRelations(Constants.CLASS_PERSON_IDREF)
+        relations.each { println('<- ' + xmiParserService.getIdRefFromNode(it)) }
+
+        then:
+        relations.size() > 0
 
     }
 

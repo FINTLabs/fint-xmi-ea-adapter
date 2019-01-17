@@ -1,6 +1,9 @@
 package no.fint.provider.eaxmi.service
 
+import no.fint.model.relation.FintResource
 import spock.lang.Specification
+
+import java.util.stream.Collectors
 
 class FintObjectServiceSpec extends Specification {
 
@@ -105,15 +108,16 @@ class FintObjectServiceSpec extends Specification {
 
     def "Transform XMI connector to FINT relasjon"() {
         given:
-        def relation = xmiParserService.getAssociations().get(0)
+        def relation = xmiParserService.getAssociations().find { (xmiParserService.getIdRefFromNode(it) == Constants.CONNECTOR_IDREF) }
 
         when:
-        def relasjon = fintObjectService.getFintRelasjon(relation)
+        def relasjon = fintObjectService.getFintRelasjon(relation).collect(Collectors.toList())
+        relasjon.each { println(it) }
 
         then:
-        relasjon.getNavn() == "statsborgerskap"
-        relasjon.getMultiplisitet() != null
-        relasjon.dokumentasjon.size() > 0
+        relasjon.every { it.resource.navn == "statsborgerskap" }
+        relasjon.every { it.resource.multiplisitet != null }
+        relasjon.every { it.resource.dokumentasjon.size() > 0 }
     }
 
     def "Get relasjon id"() {
@@ -121,7 +125,7 @@ class FintObjectServiceSpec extends Specification {
         def relation = xmiParserService.getAssociations().get(0)
 
         when:
-        def id = fintObjectService.getRelasjonId(relation)
+        def id = fintObjectService.getForwardRelasjonId(relation)
 
         then:
         id == 'no.fint.felles.person_statsborgerskap'
@@ -134,6 +138,7 @@ class FintObjectServiceSpec extends Specification {
 
         when:
         fintObjectService.addClassRelations(classRelations, Constants.CLASS_PERSON_IDREF)
+        classRelations.each { println(it) }
 
         then:
         classRelations.size() > 0

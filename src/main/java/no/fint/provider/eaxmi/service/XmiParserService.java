@@ -61,8 +61,12 @@ public class XmiParserService {
         return xpath.getStringValue(String.format("//element[@xmi:idref=\"%s\"]/@name", idref));
     }
 
-    public List<?> getClassRelations(String idref) {
-        return xpath.getNodeList(String.format("//connector/properties[@ea_type='Association']/../source[@xmi:idref='%s']/..", idref));
+    public List<?> getClassForwardRelations(String idref) {
+        return xpath.getNodeList(String.format("//connector[properties/@ea_type='Association'][source/@xmi:idref='%s'][target/role/@name]", idref));
+    }
+
+    public List<?> getClassReverseRelations(String idref) {
+        return xpath.getNodeList(String.format("//connector[properties/@ea_type='Association'][target/@xmi:idref='%s'][source/role/@name]", idref));
     }
 
     public Object getRelationSource(String idref) {

@@ -108,43 +108,47 @@ public class FintObjectService {
 
     }
 
-    public Stream<FintResource> getRelations() {
+    public Stream<FintResource<Relasjon>> getRelations() {
 
         try {
             log.info("Start getting relations");
             return xmiParserService
                     .getAssociations()
                     .stream()
-                    .map(relation ->
-                            FintResource
-                                    .with(getFintRelasjon(relation))
-                                    .addRelations(
-                                            addRelationClasses(
-                                                    xmiParserService.getIdRefFromNode(relation))));
+                    .flatMap(this::getFintRelasjon);
 
         } finally {
             log.info("End getting relations");
 
         }
-
-
     }
 
     public void addClassRelations(List<Relation> relationList, String idref) {
 
         xmiParserService
-                .getClassRelations(idref)
-                .forEach(relation -> relationList.add(new Relation.Builder()
+                .getClassForwardRelations(idref)
+                .stream()
+                .map(relation -> new Relation.Builder()
                         .with(Klasse.Relasjonsnavn.RELASJON)
                         .forType(Relasjon.class)
                         .field("id")
-                        .value(getRelasjonId(relation))
-                        .build()
-                ));
+                        .value(getForwardRelasjonId(relation))
+                        .build())
+                .forEach(relationList::add);
 
+        xmiParserService
+                .getClassReverseRelations(idref)
+                .stream()
+                .map(relation -> new Relation.Builder()
+                        .with(Klasse.Relasjonsnavn.RELASJON)
+                        .forType(Relasjon.class)
+                        .field("id")
+                        .value(getReverseRelasjonId(relation))
+                        .build())
+                .forEach(relationList::add);
     }
 
-    private List<Relation> addRelationClasses(String idref) {
+    private List<Relation> addForwardRelationClasses(String idref) {
         return Arrays.asList(
                 new Relation.Builder()
                         .with(Relasjon.Relasjonsnavn.KILDE)
@@ -158,6 +162,24 @@ public class FintObjectService {
                         .forType(Klasse.class)
                         .field("id")
                         .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref))))
+                        .build()
+        );
+    }
+
+    private List<Relation> addReverseRelationClasses(String idref) {
+        return Arrays.asList(
+                new Relation.Builder()
+                        .with(Relasjon.Relasjonsnavn.KILDE)
+                        .forType(Klasse.class)
+                        .field("id")
+                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref))))
+                        .build(),
+
+                new Relation.Builder()
+                        .with(Relasjon.Relasjonsnavn.MAL)
+                        .forType(Klasse.class)
+                        .field("id")
+                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationSource(idref))))
                         .build()
         );
     }
@@ -234,16 +256,29 @@ public class FintObjectService {
         return fintAttributt;
     }
 
-    public Relasjon getFintRelasjon(Object relation) {
+    public Stream<FintResource<Relasjon>> getFintRelasjon(Object relation) {
 
-        Relasjon relasjon = new Relasjon();
+        Stream.Builder<FintResource<Relasjon>> result = Stream.builder();
 
-        relasjon.setNavn(xpath.getStringValue(relation, "target/role/@name"));
-        relasjon.setDokumentasjon(FintFactory.getDokumentasjon(xpath.getStringValue(relation, "target/documentation/@value")));
-        relasjon.setMultiplisitet(Collections.singletonList(FintFactory.getMultiplisitetFromString(xpath.getStringValue(relation, "target/type/@multiplicity"))));
-        relasjon.setId(FintFactory.getIdentifikator(getRelasjonId(relation)));
+        if (StringUtils.isNotEmpty(xpath.getStringValue(relation, "target/role/@name"))) {
+            Relasjon relasjon = new Relasjon();
+            relasjon.setNavn(xpath.getStringValue(relation, "target/role/@name"));
+            relasjon.setDokumentasjon(FintFactory.getDokumentasjon(xpath.getStringValue(relation, "target/documentation/@value")));
+            relasjon.setMultiplisitet(Collections.singletonList(FintFactory.getMultiplisitetFromString(xpath.getStringValue(relation, "target/type/@multiplicity"))));
+            relasjon.setId(FintFactory.getIdentifikator(getForwardRelasjonId(relation)));
+            result.accept(FintResource.with(relasjon).addRelations(addForwardRelationClasses(xmiParserService.getIdRefFromNode(relation))));
+        }
 
-        return relasjon;
+        if (StringUtils.isNotEmpty(xpath.getStringValue(relation, "source/role/@name"))) {
+            Relasjon relasjon = new Relasjon();
+            relasjon.setNavn(xpath.getStringValue(relation, "source/role/@name"));
+            relasjon.setDokumentasjon(FintFactory.getDokumentasjon(xpath.getStringValue(relation, "source/documentation/@value")));
+            relasjon.setMultiplisitet(Collections.singletonList(FintFactory.getMultiplisitetFromString(xpath.getStringValue(relation, "source/type/@multiplicity"))));
+            relasjon.setId(FintFactory.getIdentifikator(getReverseRelasjonId(relation)));
+            result.accept(FintResource.with(relasjon).addRelations(addReverseRelationClasses(xmiParserService.getIdRefFromNode(relation))));
+        }
+
+        return result.build();
     }
 
     private String getId(String idref) {
@@ -272,10 +307,17 @@ public class FintObjectService {
                 .replace('ø', 'o');
     }
 
-    public String getRelasjonId(Object relation) {
+    public String getForwardRelasjonId(Object relation) {
         return String.format("%s_%s",
                 getId(xpath.getStringValue(relation, "source/@xmi:idref")),
                 stripNationalCharacters(xpath.getStringValue(relation, "target/role/@name"))
+        );
+    }
+
+    public String getReverseRelasjonId(Object relation) {
+        return String.format("%s_%s",
+                getId(xpath.getStringValue(relation, "target/@xmi:idref")),
+                stripNationalCharacters(xpath.getStringValue(relation, "source/role/@name"))
         );
     }
 
