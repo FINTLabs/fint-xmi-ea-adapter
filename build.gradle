@@ -57,7 +57,7 @@ dependencies {
     compile('org.glassfish.jersey.core:jersey-common:2.27')
     compile('org.projectlombok:lombok:1.18.4')
     
-    compile('no.fint:fint-sse:2.0.0-alpha-5')
+    compile('no.fint:fint-sse:2.0.0-alpha-6')
     compile('no.fint:fint-event-model:3.0.0')
     compile('no.fint:fint-relation-model:1.1.5')
 
