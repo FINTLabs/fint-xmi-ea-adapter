@@ -1,6 +1,6 @@
 package no.fint.provider.eaxmi.service
 
-
+import no.fint.model.resource.metamodell.KlasseResource
 import spock.lang.Specification
 
 import java.util.stream.Collectors
@@ -39,13 +39,13 @@ class FintObjectServiceSpec extends Specification {
         id == "no.fint.felles"
     }
 
-    def "Get packages"() {
+    def "Get contexts"() {
 
         when:
-        def packages = fintObjectService.getContexts()
+        def contexts = fintObjectService.getContexts()
 
         then:
-        packages.allMatch { it.getRelations().size() > 0 }
+        contexts.noneMatch { it.getLinks().isEmpty() }
     }
 
     def "Get classes"() {
@@ -54,7 +54,7 @@ class FintObjectServiceSpec extends Specification {
         def classes = fintObjectService.getClasses()
 
         then:
-        classes.allMatch { it.getRelations().size() > 0 }
+        classes.noneMatch { it.getLinks().isEmpty() }
     }
 
     def "Get relations"() {
@@ -115,9 +115,9 @@ class FintObjectServiceSpec extends Specification {
         relasjon.each { println(it) }
 
         then:
-        relasjon.every { it.resource.navn == "statsborgerskap" }
-        relasjon.every { it.resource.multiplisitet != null }
-        relasjon.every { it.resource.dokumentasjon.size() > 0 }
+        relasjon.every { it.navn == "statsborgerskap" }
+        relasjon.every { it.multiplisitet != null }
+        relasjon.every { it.dokumentasjon.size() > 0 }
     }
 
     def "Get relasjon id"() {
@@ -134,14 +134,14 @@ class FintObjectServiceSpec extends Specification {
 
     def "Add klasse relasjoner"() {
         given:
-        def classRelations = new ArrayList<>()
+        def klasse = new KlasseResource()
 
         when:
-        fintObjectService.addClassRelations(classRelations, Constants.CLASS_PERSON_IDREF)
-        classRelations.each { println(it) }
+        fintObjectService.addClassRelations(klasse, Constants.CLASS_PERSON_IDREF)
+        klasse.each { println(it) }
 
         then:
-        classRelations.size() > 0
+        !klasse.getLinks().isEmpty()
 
     }
 
