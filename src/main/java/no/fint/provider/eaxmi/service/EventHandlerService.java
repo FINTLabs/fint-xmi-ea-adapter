@@ -6,7 +6,7 @@ import no.fint.event.model.Status;
 import no.fint.event.model.health.Health;
 import no.fint.event.model.health.HealthStatus;
 import no.fint.model.metamodell.MetamodellActions;
-import no.fint.model.relation.FintResource;
+import no.fint.model.resource.FintLinks;
 import no.fint.provider.adapter.event.EventResponseService;
 import no.fint.provider.adapter.event.EventStatusService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,11 +34,11 @@ public class EventHandlerService {
         } else {
             if (eventStatusService.verifyEvent(event).getStatus() == Status.ADAPTER_ACCEPTED) {
                 MetamodellActions action = MetamodellActions.valueOf(event.getAction());
-                Event<FintResource> responseEvent = new Event<>(event);
+                Event<FintLinks> responseEvent = new Event<>(event);
 
                 switch (action) {
-                    case GET_ALL_PAKKE:
-                        fintObjectService.getPackages().forEach(responseEvent::addData);
+                    case GET_ALL_KONTEKST:
+                        fintObjectService.getContexts().forEach(responseEvent::addData);
                         break;
 
                     case GET_ALL_KLASSE:

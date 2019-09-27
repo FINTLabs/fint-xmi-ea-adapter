@@ -2,18 +2,19 @@ package no.fint.provider.eaxmi.service;
 
 import lombok.extern.slf4j.Slf4j;
 import no.fint.model.metamodell.Klasse;
-import no.fint.model.metamodell.Pakke;
+import no.fint.model.metamodell.Kontekst;
 import no.fint.model.metamodell.Relasjon;
 import no.fint.model.metamodell.kompleksedatatyper.Attributt;
-import no.fint.model.relation.FintResource;
-import no.fint.model.relation.Relation;
+import no.fint.model.resource.Link;
+import no.fint.model.resource.metamodell.KlasseResource;
+import no.fint.model.resource.metamodell.KontekstResource;
+import no.fint.model.resource.metamodell.RelasjonResource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,14 +37,13 @@ public class FintObjectService {
         log.info("Parsing XMI document complete.");
     }
 
-    public Stream<FintResource> getPackages() {
+    public Stream<KontekstResource> getContexts() {
 
         return xmiParserService
                 .getPackages()
                 .stream()
                 .map(element -> {
-                    Pakke pakke = getFintPakke(element);
-                    FintResource<Pakke> resource = FintResource.with(pakke);
+                    KontekstResource kontekst = getFintKontekst(element);
 
                     xmiParserService
                             .getClassesInPackage(
@@ -51,56 +51,39 @@ public class FintObjectService {
                             .stream()
                             .map(xmiParserService::getIdRefFromNode)
                             .map(this::getId)
-                            .map(id -> new Relation.Builder()
-                                    .with(Pakke.Relasjonsnavn.KLASSE)
-                                    .forType(Klasse.class)
-                                    .field("id")
-                                    .value(id)
-                                    .build())
-                            .forEach(resource::addRelations);
+                            .map(Link.apply(Klasse.class, "id"))
+                            .forEach(kontekst::addKlasse);
 
                     String parentId = xmiParserService.getParentPackageFromNode(element);
                     if (StringUtils.isNotEmpty(parentId)) {
-                        resource.addRelations(new Relation.Builder()
-                                .with(Pakke.Relasjonsnavn.OVERORDNET)
-                                .forType(Pakke.class)
-                                .field("id")
-                                .value(getId(parentId))
-                                .build()
-                        );
+                        kontekst.addOverordnet(Link.with(Kontekst.class, "id", getId(parentId)));
                     }
+
                     xmiParserService
                             .getChildPackagesByIdRef(xmiParserService.getIdRefFromNode(element))
                             .stream()
                             .map(xmiParserService::getIdRefFromNode)
                             .map(this::getId)
-                            .map(id -> new Relation.Builder()
-                                    .with(Pakke.Relasjonsnavn.UNDERORDNET)
-                                    .forType(Pakke.class)
-                                    .field("id")
-                                    .value(id)
-                                    .build())
-                            .forEach(resource::addRelations);
-                    return resource;
+                            .map(Link.apply(Kontekst.class, "id"))
+                            .forEach(kontekst::addUnderordnet);
 
+                    return kontekst;
                 });
     }
 
-    public Stream<FintResource> getClasses() {
+    public Stream<KlasseResource> getClasses() {
         try {
             log.info("Start getting classes");
             return xmiParserService
                     .getClasses()
                     .stream()
                     .map(element -> {
-                        Klasse klasse = getFintKlasse(element);
-                        List<Relation> relationList = new ArrayList<>();
+                        KlasseResource klasse = getFintKlasse(element);
+                        addInheritanceFromRelation(element, klasse);
+                        addContextRelation(element, klasse);
+                        addClassRelations(klasse, xmiParserService.getIdRefFromNode(element));
 
-                        addInheritanceFromRelation(element, relationList);
-                        addPackageRelation(element, relationList);
-                        addClassRelations(relationList, xmiParserService.getIdRefFromNode(element));
-
-                        return FintResource.with(klasse).addRelations(relationList);
+                        return klasse;
                     });
         } finally {
             log.info("End getting classes");
@@ -108,7 +91,7 @@ public class FintObjectService {
 
     }
 
-    public Stream<FintResource<Relasjon>> getRelations() {
+    public Stream<RelasjonResource> getRelations() {
 
         try {
             log.info("Start getting relations");
@@ -123,100 +106,62 @@ public class FintObjectService {
         }
     }
 
-    public void addClassRelations(List<Relation> relationList, String idref) {
+    public void addClassRelations(KlasseResource klasse, String idref) {
 
         xmiParserService
                 .getClassForwardRelations(idref)
                 .stream()
-                .map(relation -> new Relation.Builder()
-                        .with(Klasse.Relasjonsnavn.RELASJON)
-                        .forType(Relasjon.class)
-                        .field("id")
-                        .value(getForwardRelasjonId(relation))
-                        .build())
-                .forEach(relationList::add);
+                .map(this::getForwardRelasjonId)
+                .map(Link.apply(Relasjon.class, "id"))
+                .forEach(klasse::addRelasjon);
 
         xmiParserService
                 .getClassReverseRelations(idref)
                 .stream()
-                .map(relation -> new Relation.Builder()
-                        .with(Klasse.Relasjonsnavn.RELASJON)
-                        .forType(Relasjon.class)
-                        .field("id")
-                        .value(getReverseRelasjonId(relation))
-                        .build())
-                .forEach(relationList::add);
+                .map(this::getReverseRelasjonId)
+                .map(Link.apply(Relasjon.class, "id"))
+                .forEach(klasse::addRelasjon);
     }
 
-    private List<Relation> addForwardRelationClasses(String idref) {
-        return Arrays.asList(
-                new Relation.Builder()
-                        .with(Relasjon.Relasjonsnavn.KILDE)
-                        .forType(Klasse.class)
-                        .field("id")
-                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationSource(idref))))
-                        .build(),
+    private void addForwardRelationClasses(RelasjonResource relasjon, String idref) {
+        relasjon.addKilde(Link.with(Klasse.class, "id",
+                getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationSource(idref)))));
 
-                new Relation.Builder()
-                        .with(Relasjon.Relasjonsnavn.MAL)
-                        .forType(Klasse.class)
-                        .field("id")
-                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref))))
-                        .build()
-        );
+        relasjon.addMal(Link.with(Klasse.class, "id",
+                getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref)))));
     }
 
-    private List<Relation> addReverseRelationClasses(String idref) {
-        return Arrays.asList(
-                new Relation.Builder()
-                        .with(Relasjon.Relasjonsnavn.KILDE)
-                        .forType(Klasse.class)
-                        .field("id")
-                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref))))
-                        .build(),
+    private void addReverseRelationClasses(RelasjonResource relasjon, String idref) {
+        relasjon.addKilde(Link.with(Klasse.class, "id",
+                getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationTarget(idref)))));
 
-                new Relation.Builder()
-                        .with(Relasjon.Relasjonsnavn.MAL)
-                        .forType(Klasse.class)
-                        .field("id")
-                        .value(getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationSource(idref))))
-                        .build()
-        );
+        relasjon.addMal(Link.with(Klasse.class, "id",
+                getId(xmiParserService.getIdRefFromNode(xmiParserService.getRelationSource(idref)))));
     }
 
-    private void addPackageRelation(Object node, List<Relation> relationList) {
-        relationList.add(new Relation.Builder()
-                .with(Klasse.Relasjonsnavn.PAKKE)
-                .forType(Pakke.class)
-                .field("id")
-                .value(getId(xmiParserService.getParentPackageByIdRef(xmiParserService.getIdRefFromNode(node))))
-                .build()
-        );
+    private void addContextRelation(Object node, KlasseResource klasse) {
+        klasse.addKontekst(
+                Link.with(Kontekst.class, "id",
+                        getId(xmiParserService.getParentPackageByIdRef(xmiParserService.getIdRefFromNode(node)))));
     }
 
-    private void addInheritanceFromRelation(Object node, List<Relation> relationList) {
+    private void addInheritanceFromRelation(Object node, KlasseResource klasse) {
         String arverId = xmiParserService.getInheritFromId(xmiParserService.getIdRefFromNode(node));
         if (StringUtils.isNotEmpty(arverId)) {
-            Relation arverRelation = new Relation.Builder().
-                    with(Klasse.Relasjonsnavn.ARVER)
-                    .forType(Klasse.class)
-                    .field("id")
-                    .value(getId(arverId))
-                    .build();
-            relationList.add(arverRelation);
+            klasse.addArver(Link.with(Klasse.class, "id", getId(arverId)));
         }
     }
 
-    public Pakke getFintPakke(Object item) {
+    public KontekstResource getFintKontekst(Object item) {
 
-        Pakke pakke = new Pakke();
-        pakke.setId(FintFactory.getIdentifikator(getId(xpath.getStringValue(item, "@xmi:idref"))));
-        pakke.setNavn(xpath.getStringValue(item, "@name"));
-        pakke.setStereotype(xpath.getStringValue(item, "properties/@stereotype"));
-        return pakke;
+        KontekstResource kontekst = new KontekstResource();
+        kontekst.setId(FintFactory.getIdentifikator(getId(xpath.getStringValue(item, "@xmi:idref"))));
+        kontekst.setNavn(xpath.getStringValue(item, "@name"));
+        kontekst.setStereotype(xpath.getStringValue(item, "properties/@stereotype"));
+        return kontekst;
     }
 
-    public Klasse getFintKlasse(Object item) {
+    public KlasseResource getFintKlasse(Object item) {
 
 
         List<Attributt> attributtList =
@@ -226,7 +171,7 @@ public class FintObjectService {
                         .collect(Collectors.toList());
 
 
-        Klasse klasse = new Klasse();
+        KlasseResource klasse = new KlasseResource();
 
         klasse.setAbstrakt(Boolean.valueOf(xpath.getStringValue(item, "properties/@isAbstract")));
         klasse.setAttributter(attributtList);
@@ -256,26 +201,28 @@ public class FintObjectService {
         return fintAttributt;
     }
 
-    public Stream<FintResource<Relasjon>> getFintRelasjon(Object relation) {
+    public Stream<RelasjonResource> getFintRelasjon(Object relation) {
 
-        Stream.Builder<FintResource<Relasjon>> result = Stream.builder();
+        Stream.Builder<RelasjonResource> result = Stream.builder();
 
         if (StringUtils.isNotEmpty(xpath.getStringValue(relation, "target/role/@name"))) {
-            Relasjon relasjon = new Relasjon();
+            RelasjonResource relasjon = new RelasjonResource();
             relasjon.setNavn(xpath.getStringValue(relation, "target/role/@name"));
             relasjon.setDokumentasjon(FintFactory.getDokumentasjon(xpath.getStringValue(relation, "target/documentation/@value")));
             relasjon.setMultiplisitet(Collections.singletonList(FintFactory.getMultiplisitetFromString(xpath.getStringValue(relation, "target/type/@multiplicity"))));
             relasjon.setId(FintFactory.getIdentifikator(getForwardRelasjonId(relation)));
-            result.accept(FintResource.with(relasjon).addRelations(addForwardRelationClasses(xmiParserService.getIdRefFromNode(relation))));
+            addForwardRelationClasses(relasjon, xmiParserService.getIdRefFromNode(relation));
+            result.accept(relasjon);
         }
 
         if (StringUtils.isNotEmpty(xpath.getStringValue(relation, "source/role/@name"))) {
-            Relasjon relasjon = new Relasjon();
+            RelasjonResource relasjon = new RelasjonResource();
             relasjon.setNavn(xpath.getStringValue(relation, "source/role/@name"));
             relasjon.setDokumentasjon(FintFactory.getDokumentasjon(xpath.getStringValue(relation, "source/documentation/@value")));
             relasjon.setMultiplisitet(Collections.singletonList(FintFactory.getMultiplisitetFromString(xpath.getStringValue(relation, "source/type/@multiplicity"))));
             relasjon.setId(FintFactory.getIdentifikator(getReverseRelasjonId(relation)));
-            result.accept(FintResource.with(relasjon).addRelations(addReverseRelationClasses(xmiParserService.getIdRefFromNode(relation))));
+            addReverseRelationClasses(relasjon, xmiParserService.getIdRefFromNode(relation));
+            result.accept(relasjon);
         }
 
         return result.build();

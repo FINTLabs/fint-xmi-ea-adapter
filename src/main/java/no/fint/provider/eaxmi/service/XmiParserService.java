@@ -14,7 +14,7 @@ public class XmiParserService {
     @Autowired
     XPathService xpath;
 
-    @Value("${fint.eaxmi.uri:https://raw.githubusercontent.com/FINTprosjektet/fint-informasjonsmodell/master/FINT-informasjonsmodell.xml}")
+    @Value("${fint.eaxmi.uri:https://raw.githubusercontent.com/FINTLabs/fint-informasjonsmodell/master/FINT-informasjonsmodell.xml}")
     private String uri;
 
     private List<?> packages;

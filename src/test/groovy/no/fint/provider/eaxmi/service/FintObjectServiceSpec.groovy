@@ -1,6 +1,6 @@
 package no.fint.provider.eaxmi.service
 
-import no.fint.model.relation.FintResource
+
 import spock.lang.Specification
 
 import java.util.stream.Collectors
@@ -42,7 +42,7 @@ class FintObjectServiceSpec extends Specification {
     def "Get packages"() {
 
         when:
-        def packages = fintObjectService.getPackages()
+        def packages = fintObjectService.getContexts()
 
         then:
         packages.allMatch { it.getRelations().size() > 0 }
@@ -72,7 +72,7 @@ class FintObjectServiceSpec extends Specification {
         def packages = xmiParserService.getPackages()
 
         when:
-        def pakke = fintObjectService.getFintPakke(packages.get(0))
+        def pakke = fintObjectService.getFintKontekst(packages.get(0))
 
         then:
         pakke.getNavn() == "FINT"

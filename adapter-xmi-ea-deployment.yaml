@@ -28,7 +28,7 @@ spec:
             secretName: fake-adapter.json
       containers:
         - name: adapter-xmi-ea
-          image: fintlabs.azurecr.io/fint-xmi-ea-adapter:build.7
+          image: fintlabs.azurecr.io/fint-xmi-ea-adapter:build.9
           readinessProbe:
             initialDelaySeconds: 30
             timeoutSeconds: 5
