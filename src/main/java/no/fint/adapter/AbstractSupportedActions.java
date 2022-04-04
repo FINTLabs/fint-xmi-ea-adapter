@@ -1,11 +1,10 @@
-package no.fint.provider.adapter;
+package no.fint.adapter;
 
 import lombok.Getter;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class AbstractSupportedActions {
 
@@ -16,9 +15,15 @@ public abstract class AbstractSupportedActions {
         actions.add(e.name());
     }
 
-    public void addAll(Class<? extends Enum> e) {
-        Enum[] enumConstants = e.getEnumConstants();
-        actions.addAll(Arrays.stream(enumConstants).map(Enum::name).collect(Collectors.toList()));
+    public void add(String name) {
+        actions.add(name);
     }
 
+    public void addAll(Class<? extends Enum> e) {
+        Stream.of(e.getEnumConstants()).map(Enum::name).forEach(actions::add);
+    }
+
+    public boolean supports(String action) {
+        return actions.contains(action);
+    }
 }

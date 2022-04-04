@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +36,11 @@ public class FintObjectService {
         log.info("Parsing XMI document...");
         xmiParserService.getXmiDocument();
         log.info("Parsing XMI document complete.");
+    }
+
+    @PostConstruct
+    public void init() {
+        update();
     }
 
     public Stream<KontekstResource> getContexts() {
