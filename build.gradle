@@ -1,113 +1,64 @@
-buildscript {
-    ext {
-        springBootVersion = '1.5.21.RELEASE'
-    }
-    repositories {
-        jcenter()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-    }
-}
-
 plugins {
-    id 'com.github.ben-manes.versions' version '0.25.0'
+    id 'org.springframework.boot' version '2.6.5'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
 }
 
-apply plugin: 'java'
 apply plugin: 'groovy'
-apply plugin: 'maven'
-apply plugin: 'org.springframework.boot'
 
 
-javadoc {
-    source = sourceSets.main.allJava
-    classpath = configurations.runtime
-    options.windowTitle = 'FINT Java SSE Adapter Skeleton'
-    options.memberLevel = JavadocMemberLevel.PRIVATE
-    destinationDir = file('./javadocs/')
-}
+group = 'no.fint'
+sourceCompatibility = '17'
 
-import org.apache.tools.ant.filters.ReplaceTokens
-afterEvaluate {
-    configure(processResources) {
-        filesMatching('**/*.yml') {
-            filter(ReplaceTokens, tokens: [version: version])
-        }
+
+configurations {
+    implementationOnly {
+        extendsFrom annotationProcessor
     }
 }
-
-
-sourceCompatibility = 1.8
 
 repositories {
+    mavenCentral()
     mavenLocal()
-    jcenter()
     maven {
-        url 'http://dl.bintray.com/fint/maven'
+        url "https://repo.fintlabs.no/releases"
     }
 }
 
 dependencies {
-    compile('com.github.springfox.loader:springfox-loader:2.0.0')
-    compile('net.sf.saxon:Saxon-HE:9.9.1-5')
-    compile('org.apache.commons:commons-lang3:3.9')
-    compile('org.glassfish.jersey.core:jersey-client:2.29.1')
-    compile('org.glassfish.jersey.core:jersey-common:2.29.1')
-    compile('org.projectlombok:lombok:1.18.10')
-    
-    compile('no.fint:fint-sse:2.0.0-alpha-9')
-    compile('no.fint:fint-event-model:3.0.0')
-    compile('no.fint:fint-relation-model:1.1.5')
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
 
-    compile("no.fint:fint-metamodell-model-java:${apiVersion}")
 
-    compile('org.springframework.boot:spring-boot-starter-web')
-    compile('org.springframework.boot:spring-boot-devtools')
-    compile('org.springframework.boot:spring-boot-actuator')
+    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
 
-    testCompile('cglib:cglib-nodep:3.2.9')
-    testCompile('org.spockframework:spock-spring:1.1-groovy-2.4')
-    testCompile('org.spockframework:spock-core:1.1-groovy-2.4')
-    testCompile('org.springframework.boot:spring-boot-starter-test')
+    implementation 'org.glassfish.jersey.core:jersey-common:2.29.1'
+    implementation 'org.glassfish.jersey.core:jersey-client:2.29.1'
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
+    implementation 'com.sun.xml.bind:jaxb-impl:2.3.3'
+    implementation 'net.sf.saxon:Saxon-HE:9.9.1-5'
+
+
+    implementation 'no.fint:fint-sse:2.0.0'
+    implementation 'no.fint:fint-event-model:3.0.1'
+    implementation 'no.fint:fint-relation-model:1.1.6'
+    implementation 'no.fint:fint-model-resource:0.4.1'
+    implementation 'no.fint:fint-model-core:0.2.1'
+    implementation 'no.fintlabs:fint-metamodell-model-java:1.0.0'
+
+    //implementation 'no.fint:fint-administrasjon-resource-model-java:3.10.0'
+    //implementation 'no.fint:fint-okonomi-resource-model-java:3.10.0'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+
+    testImplementation 'cglib:cglib-nodep:3.3.0'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.spockframework:spock-spring:2.0-groovy-3.0'
+    testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
 }
 
-task copyExternalDependencies(type: Copy) {
-    from configurations.runtime
-    into "$buildDir/deps/external"
-    exclude '**/fint-*.jar'
-}
 
-task copyFintDependencies(type: Copy) {
-    from configurations.runtime
-    into "$buildDir/deps/fint"
-    include '**/fint-*.jar'
-}
-
-build.dependsOn(copyExternalDependencies)
-build.dependsOn(copyFintDependencies)
-
-jar {
-    manifest {
-        attributes(
-                "Manifest-Version": "1.0",
-                "Main-Class": "no.fint.Application",
-                "Specification-Version": "${apiVersion}",
-                "Implementation-Version": "${version}",
-                "Class-Path": configurations.runtime.collect { it.getName() }.join(' ')
-        )
-    }
-}
-
-bootRepackage.enabled = false
-
-bootRun {
-    systemProperties System.properties
-}
-
-test {
-    testLogging {
-        events 'passed', 'skipped', 'failed'
-    }
-}
