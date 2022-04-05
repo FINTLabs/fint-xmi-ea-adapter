@@ -8,7 +8,7 @@ import no.fint.adapter.FintAdapterEndpoints;
 import no.fint.adapter.FintAdapterProps;
 import no.fint.event.model.HeaderConstants;
 import no.fint.oauth.TokenService;
-import no.fint.provider.eaxmi.service.EventHandlerService;
+import no.fint.eaxmi.service.EventHandlerService;
 import no.fint.sse.FintSse;
 import no.fint.sse.FintSseConfig;
 import org.springframework.scheduling.annotation.Scheduled;

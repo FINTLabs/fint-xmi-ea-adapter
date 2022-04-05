@@ -1,5 +1,4 @@
-package no.fint.provider.eaxmi.service
-
+package no.fint.eaxmi.service
 
 import spock.lang.Specification
 

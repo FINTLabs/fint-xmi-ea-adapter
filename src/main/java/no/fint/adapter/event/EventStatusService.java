@@ -7,7 +7,7 @@ import no.fint.event.model.DefaultActions;
 import no.fint.event.model.Event;
 import no.fint.event.model.HeaderConstants;
 import no.fint.event.model.Status;
-import no.fint.provider.eaxmi.SupportedActions;
+import no.fint.eaxmi.SupportedActions;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;

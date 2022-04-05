@@ -1,4 +1,4 @@
-package no.fint.provider.eaxmi;
+package no.fint.eaxmi;
 
 import no.fint.adapter.AbstractSupportedActions;
 import org.springframework.stereotype.Component;

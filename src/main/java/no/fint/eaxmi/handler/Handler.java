@@ -1,4 +1,4 @@
-package no.fint.provider.eaxmi.handler;
+package no.fint.eaxmi.handler;
 
 import no.fint.event.model.Event;
 import no.fint.model.resource.FintLinks;

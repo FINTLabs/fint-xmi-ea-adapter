@@ -1,4 +1,4 @@
-package no.fint.provider.eaxmi.service;
+package no.fint.eaxmi.service;
 
 import com.google.common.collect.ImmutableMap;
 import net.sf.saxon.om.TreeInfo;

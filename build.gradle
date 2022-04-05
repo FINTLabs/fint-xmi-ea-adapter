@@ -57,8 +57,12 @@ dependencies {
 
     testImplementation 'cglib:cglib-nodep:3.3.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.spockframework:spock-spring:2.0-groovy-3.0'
-    testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
+    testImplementation 'org.spockframework:spock-spring:2.1-groovy-3.0'
+    testImplementation 'org.spockframework:spock-core:2.1-groovy-3.0'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 

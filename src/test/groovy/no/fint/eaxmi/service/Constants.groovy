@@ -1,4 +1,4 @@
-package no.fint.provider.eaxmi.service
+package no.fint.eaxmi.service
 
 class Constants {
     static final String PACKAGE_FELLES_IDREF = "EAPK_3D763EF0_3066_4aa9_97D7_67827101CC20"

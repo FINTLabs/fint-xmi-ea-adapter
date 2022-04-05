@@ -1,10 +1,10 @@
-package no.fint.provider.eaxmi.service;
+package no.fint.eaxmi.service;
 
 import no.fint.event.model.Event;
 import no.fint.event.model.ResponseStatus;
 import no.fint.model.metamodell.MetamodellActions;
 import no.fint.model.resource.FintLinks;
-import no.fint.provider.eaxmi.handler.Handler;
+import no.fint.eaxmi.handler.Handler;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;

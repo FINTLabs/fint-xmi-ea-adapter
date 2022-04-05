@@ -1,17 +1,17 @@
-package no.fint.provider.eaxmi.service;
+package no.fint.eaxmi.service;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.fint.adapter.event.EventResponseService;
 import no.fint.adapter.event.EventStatusService;
+import no.fint.eaxmi.handler.Handler;
 import no.fint.event.model.Event;
 import no.fint.event.model.ResponseStatus;
 import no.fint.event.model.Status;
 import no.fint.event.model.health.Health;
 import no.fint.event.model.health.HealthStatus;
 import no.fint.model.resource.FintLinks;
-import no.fint.provider.eaxmi.SupportedActions;
-import no.fint.provider.eaxmi.handler.Handler;
+import no.fint.eaxmi.SupportedActions;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;

@@ -1,4 +1,4 @@
-package no.fint.provider.eaxmi.service;
+package no.fint.eaxmi.service;
 
 import no.fint.model.metamodell.kompleksedatatyper.Dokumentasjon;
 import no.fint.model.metamodell.kompleksedatatyper.Identifikator;

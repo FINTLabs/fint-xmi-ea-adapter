@@ -1,8 +1,9 @@
-package no.fint.provider.adapter.sse
+package no.fint.adapter.sse
 
+import no.fint.adapter.sse.FintEventListener
 import no.fint.event.model.DefaultActions
 import no.fint.event.model.Event
-
+import no.fint.eaxmi.service.EventHandlerService
 import org.glassfish.jersey.media.sse.InboundEvent
 import spock.lang.Specification
 
@@ -14,7 +15,7 @@ class FintEventListenerSpec extends Specification {
     void setup() {
         inboundEvent = Mock(InboundEvent)
         eventHandlerService = Mock(EventHandlerService)
-        fintEventListener = new FintEventListener(eventHandlerService)
+        fintEventListener = new FintEventListener('test', eventHandlerService)
     }
 
     def "Handle incoming SSE event"() {
@@ -25,6 +26,6 @@ class FintEventListenerSpec extends Specification {
         fintEventListener.onEvent(event)
 
         then:
-        1 * eventHandlerService.handleEvent(event)
+        1 * eventHandlerService.handleEvent('test', event)
     }
 }

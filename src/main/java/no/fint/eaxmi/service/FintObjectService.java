@@ -1,4 +1,4 @@
-package no.fint.provider.eaxmi.service;
+package no.fint.eaxmi.service;
 
 import lombok.extern.slf4j.Slf4j;
 import no.fint.model.metamodell.Klasse;

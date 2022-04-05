@@ -1,4 +1,4 @@
-package no.fint.provider.eaxmi.service;
+package no.fint.eaxmi.service;
 
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
