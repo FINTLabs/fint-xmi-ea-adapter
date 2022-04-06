@@ -5,15 +5,20 @@ springfox:
   title: 'FINT SSE Adapter Metamodell XMI Enterprise Architect'
   version: '@version@'
 
-base-url: https://beta.felleskomponent.no/fint/metamodell/provider
+#base-url: https://beta.felleskomponent.no/fint/metamodell/provider
 fint:
   adapter:
     organizations: fintlabs.no
-    sse-endpoint: ${base-url}/sse/%s
-    status-endpoint: ${base-url}/status
-    response-endpoint: ${base-url}/response
-
-  oauth:
-    enabled: false
-    access-token-uri: https://idp.felleskomponent.no/nidp/oauth/nam/token
-    scope: fint-client
+    endpoints:
+      sse: /sse/%s
+      status: /status
+      response: /response
+      providers:
+        metamodell:  https://beta.felleskomponent.no/fint/metamodell/provider
+logging:
+  level:
+    org:
+      glassfish:
+        jersey:
+          media:
+            sse: DEBUG
