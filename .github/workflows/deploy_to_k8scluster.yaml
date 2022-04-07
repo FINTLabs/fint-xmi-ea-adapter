@@ -62,7 +62,7 @@ jobs:
           manifests: |
             k8s.yaml
           images: |
-            ${{ env.REGISTRY_NAME }}.azurecr.io/${{steps.get_repo.outputs.REPO}}${{ github.sha }}
+            ${{ env.REGISTRY_NAME }}.azurecr.io/${{steps.get_repo.outputs.REPO}}:${{ github.sha }}
           namespace: ${{ env.NAMESPACE }}
 
 ## Api cluster ##
