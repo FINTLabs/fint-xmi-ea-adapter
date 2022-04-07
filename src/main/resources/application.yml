@@ -15,10 +15,4 @@ fint:
       response: /response
       providers:
         metamodell:  https://beta.felleskomponent.no/fint/metamodell/provider
-logging:
-  level:
-    org:
-      glassfish:
-        jersey:
-          media:
-            sse: DEBUG
+
