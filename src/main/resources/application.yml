@@ -5,7 +5,6 @@ springfox:
   title: 'FINT SSE Adapter Metamodell XMI Enterprise Architect'
   version: '@version@'
 
-#base-url: https://beta.felleskomponent.no/fint/metamodell/provider
 fint:
   adapter:
     organizations: fintlabs.no

@@ -26,10 +26,6 @@ spec:
         io.kompose.service: adapter-xmi-ea
     spec:
       restartPolicy: Always
-#      volumes:
-#        - name: fint-oauth
-#          secret:
-#            secretName: fake-adapter.json
       containers:
         - name: adapter-xmi-ea
           image: fintlabsacr.azurecr.io/fint-xmi-ea-adapter:dummy
@@ -43,9 +39,6 @@ spec:
             limits:
               memory: "600Mi"
               cpu: "600m"
-          # volumeMounts:
-          #   - name: fint-oauth
-          #     mountPath: /var/fint/oauth
           envFrom:
             - configMapRef:
                 name: fint-environment
@@ -62,7 +55,3 @@ spec:
               value: fintlabs.no
             - name: fint.eaxmi.uri
               value: https://raw.githubusercontent.com/FINTprosjektet/fint-informasjonsmodell/master/FINT-informasjonsmodell.xml
-            # - name: fint.oauth.enabled
-            #   value: "true"
-            # - name: fint.oauth.json
-            #   value: file:/var/fint/oauth/fake-adapter.json
