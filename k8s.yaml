@@ -1,9 +1,13 @@
+apiVersion: onepassword.com/v1
+kind: OnePasswordItem
+metadata:
+  name: metamodell-adapter
+spec:
+  itemPath: "vaults/aks-beta-vault/items/metamodell-adapter"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: C:\Users\noasgnil\go\bin\kompose.exe convert -d -f .\docker-stack.yml
-    kompose.version: 1.16.0 (HEAD)
   labels:
     io.kompose.service: adapter-xmi-ea
   name: adapter-xmi-ea
@@ -22,13 +26,13 @@ spec:
         io.kompose.service: adapter-xmi-ea
     spec:
       restartPolicy: Always
-      volumes:
-        - name: fint-oauth
-          secret:
-            secretName: fake-adapter.json
+#      volumes:
+#        - name: fint-oauth
+#          secret:
+#            secretName: fake-adapter.json
       containers:
         - name: adapter-xmi-ea
-          image: fintlabs.azurecr.io/fint-xmi-ea-adapter:build.9
+          image: fintlabsacr.azurecr.io/fint-xmi-ea-adapter:dummy
           readinessProbe:
             initialDelaySeconds: 30
             timeoutSeconds: 5
@@ -39,25 +43,26 @@ spec:
             limits:
               memory: "600Mi"
               cpu: "600m"
-          volumeMounts:
-            - name: fint-oauth
-              mountPath: /var/fint/oauth
+          # volumeMounts:
+          #   - name: fint-oauth
+          #     mountPath: /var/fint/oauth
+          envFrom:
+            - configMapRef:
+                name: fint-environment
+            - secretRef:
+                name: metamodell-adapter
           env:
             - name: TZ
               value: Europe/Oslo
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:+ExitOnOutOfMemoryError -Xmx300m -verbose:gc"
-            - name: fint.adapter.sse-endpoint
-              value: https://beta.felleskomponent.no/fint/metamodell/provider/sse/%s
-            - name: fint.adapter.status-endpoint
-              value: https://beta.felleskomponent.no/fint/metamodell/provider/status
-            - name: fint.adapter.response-endpoint
-              value: https://beta.felleskomponent.no/fint/metamodell/provider/response
+            - name: fint.adapter.endpoints.providers
+              value: https://beta.felleskomponent.no/fint/metamodell/provider
             - name: fint.adapter.organizations
               value: fintlabs.no
             - name: fint.eaxmi.uri
               value: https://raw.githubusercontent.com/FINTprosjektet/fint-informasjonsmodell/master/FINT-informasjonsmodell.xml
-            - name: fint.oauth.enabled
-              value: "true"
-            - name: fint.oauth.json
-              value: file:/var/fint/oauth/fake-adapter.json
+            # - name: fint.oauth.enabled
+            #   value: "true"
+            # - name: fint.oauth.json
+            #   value: file:/var/fint/oauth/fake-adapter.json
