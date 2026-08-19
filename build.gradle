@@ -34,8 +34,8 @@ dependencies {
     implementation 'com.google.guava:guava:31.1-jre'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
 
-    implementation 'org.glassfish.jersey.core:jersey-common:2.29.1'
-    implementation 'org.glassfish.jersey.core:jersey-client:2.29.1'
+    implementation 'org.glassfish.jersey.core:jersey-common:4.0.2'
+    implementation 'org.glassfish.jersey.core:jersey-client:4.0.2'
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
     implementation 'com.sun.xml.bind:jaxb-impl:3.0.2'
     implementation 'net.sf.saxon:Saxon-HE:11.3'
