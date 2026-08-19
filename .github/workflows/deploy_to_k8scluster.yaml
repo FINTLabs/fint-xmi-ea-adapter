@@ -33,7 +33,7 @@ jobs:
 
 ## Alpha cluster ##
 #      - name: Set the target Alpha cluster.
-#        uses: azure/aks-set-context@v1
+#        uses: azure/aks-set-context@v5
 #        with:
 #         creds: '${{ secrets.AKS_ALPHA_FINT_GITHUB }}'
 #         cluster-name: ${{ env.ALPHA_CLUSTER_NAME }}
@@ -50,7 +50,7 @@ jobs:
 
 ## Beta cluster ##
       - name: Set the target Beta cluster.
-        uses: azure/aks-set-context@v1
+        uses: azure/aks-set-context@v5
         with:
           creds: '${{ secrets.AKS_BETA_FINT_GITHUB }}'
           cluster-name: ${{ env.BETA_CLUSTER_NAME }}
@@ -67,7 +67,7 @@ jobs:
 
 ## Api cluster ##
 #      - name: Set the target Api cluster.
-#        uses: azure/aks-set-context@v1
+#        uses: azure/aks-set-context@v5
 #        with:
 #          creds: '${{ secrets.AKS_API_FINT_GITHUB }}'
 #          cluster-name: ${{ env.API_CLUSTER_NAME }}
