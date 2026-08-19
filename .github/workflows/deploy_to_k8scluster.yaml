@@ -57,7 +57,7 @@ jobs:
           resource-group: ${{ env.BETA_CLUSTER_RESOURCE_GROUP }}
 
       - name: Deploy to Beta
-        uses: azure/k8s-deploy@v1
+        uses: azure/k8s-deploy@v7
         with:
           manifests: |
             k8s.yaml
@@ -74,7 +74,7 @@ jobs:
 #          resource-group: ${{ env.API_CLUSTER_RESOURCE_GROUP }}
 #
 #      - name: Deploy to Api
-#        uses: azure/k8s-deploy@v1
+#        uses: azure/k8s-deploy@v7
 #        with:
 #          manifests: |
 #            k8s.yaml
